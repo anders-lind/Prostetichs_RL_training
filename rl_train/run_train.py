@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 from rl_train.envs.environment_handler import EnvironmentHandler
 import subprocess
+import multiprocessing as mp
 
 def get_git_info():
     try:
@@ -68,6 +69,7 @@ def ppo_train_with_parameters(config, train_time_step, is_rendering_on, train_lo
     print("learning done!")
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn', force=True)
     import argparse
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--config_file_path", type=str, default="", help="path to train config file")

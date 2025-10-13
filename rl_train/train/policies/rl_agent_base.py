@@ -24,13 +24,13 @@ import torch
 torch.autograd.set_detect_anomaly(True)
 ################################## set device ##################################
 # set device to cpu or cuda
-# device = torch.device('cpu')
-# if(torch.cuda.is_available()): 
-#     device = torch.device('cuda:0') 
-#     torch.cuda.empty_cache()
-#     print("Device: " + str(torch.cuda.get_device_name(device)))
-# else:
-#     print("Device: cpu")
+device = torch.device('cpu')
+if(torch.cuda.is_available()): 
+    device = torch.device('cuda:0') 
+    torch.cuda.empty_cache()
+    print("Device: " + str(torch.cuda.get_device_name(device)))
+else:
+    print("Device: cpu")
 
 class BasePPOCustomNetwork(nn.Module):
     def __init__(
