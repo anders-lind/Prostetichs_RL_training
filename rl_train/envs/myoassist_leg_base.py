@@ -12,6 +12,9 @@ from myoassist_utils.hfield_manager import HfieldManager
 from enum import Enum
 import random
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class MyoAssistLegBase(env_base.MujocoEnv):
@@ -31,7 +34,7 @@ class MyoAssistLegBase(env_base.MujocoEnv):
         "l_hip_sensor",
         "r_ankle_sensor",
         "l_ankle_sensor",
-        "r_mtp_sensor",
+        # "r_mtp_sensor",
         "l_mtp_sensor",
     ]
 
@@ -404,6 +407,7 @@ class MyoAssistLegBase(env_base.MujocoEnv):
     def _get_max_joint_constraint_force(self):
         max_constraint_force = 0
         for sensor_name in self.JOINT_LIMIT_SENSOR_NAMES:
+            logger.debug("DEBUG sensor_name=%s", sensor_name)
             sensor_data = self.sim.data.sensor(sensor_name).data[0].copy()
             max_constraint_force = max(max_constraint_force, np.max(np.abs(sensor_data)))
         return max_constraint_force
