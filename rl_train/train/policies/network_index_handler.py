@@ -39,11 +39,32 @@ class NetworkIndexHandler:
         for net_indexing_info in self.net_indexing_info[net_name]["observation"]:
             if net_indexing_info["type"] == "range":
                 start_inclusive, end_exclusive = net_indexing_info["range"]
-                result[:,current_index:current_index + end_exclusive - start_inclusive] = observation[:,start_inclusive:end_exclusive]
-                current_index += end_exclusive - start_inclusive
+                # Validate source slice is available in the provided observation
+                src_slice_len = max(0, min(observation.shape[1], end_exclusive) - start_inclusive)
+                expected_len = end_exclusive - start_inclusive
+                if src_slice_len != expected_len:
+                    raise ValueError(
+                        f"Observation too short for range mapping (net={net_name}). "
+                        f"Requested range [{start_inclusive}, {end_exclusive}) length={expected_len} but observation has only {observation.shape[1]} columns. "
+                        f"net_indexing_info={net_indexing_info}"
+                    )
+                result[:,current_index:current_index + expected_len] = observation[:,start_inclusive:end_exclusive]
+                current_index += expected_len
             elif net_indexing_info["type"] == "index":# specifying index of observation
-                result[:,current_index] = observation[:,current_index]
-                current_index += 1
+                # copy the specified indices from the source observation into the result
+                # support a list of indices
+                indices = net_indexing_info.get("index", [])
+                if not isinstance(indices, (list, tuple)):
+                    indices = [indices]
+                for idx in indices:
+                    if idx < 0 or idx >= observation.shape[1]:
+                        raise ValueError(
+                            f"Observation index {idx} out of bounds for net={net_name}. observation has {observation.shape[1]} columns. "
+                            f"net_indexing_info={net_indexing_info}"
+                        )
+                    # Place the selected observation column into the next slot of result
+                    result[:, current_index] = observation[:, idx]
+                    current_index += 1
         # do not check observation length since it could be different if there is void
         # if observation.shape[1] != observation_num:
         #     raise ValueError(f"Observation length {observation.shape[1]} does not match expected length {observation_num}")

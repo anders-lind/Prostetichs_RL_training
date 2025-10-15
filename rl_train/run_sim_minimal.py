@@ -13,16 +13,17 @@ logging.basicConfig(level=logging.DEBUG)
 #                        env_params=TrainSessionConfigBase.EnvParams())
 
 # # myoLeg22_2D_OSL_A - Now works!
-env = MyoAssistLegBase(model_path="models/22muscle_2D/myoLeg22_2D_OSL_A.xml", 
-                       env_params=TrainSessionConfigBase.EnvParams())
+# env = MyoAssistLegBase(model_path="models/22muscle_2D/myoLeg22_2D_OSL_A.xml", 
+#                        env_params=TrainSessionConfigBase.EnvParams())
 
 # myoLeg26_TUTORIAL - Now works!
-# env = MyoAssistLegBase(model_path="models/26muscle_3D/myoLeg26_OSL_A.xml",
-#                        env_params=TrainSessionConfigBase.EnvParams())
+env = MyoAssistLegBase(model_path="models/26muscle_3D/myoLeg26_OSL_A.xml",
+                       env_params=TrainSessionConfigBase.EnvParams())
 
 env.mujoco_render_frames = True
 
-obs, info = env.reset(seed=1)
+# obs, info = env.reset(seed=1)
+obs, info = env.reset()
 for timestep in range(150):
     # random_action = env.action_space.sample() # Random action
     random_action = env.action_space.sample() * 0.0  # Zero action
