@@ -115,7 +115,7 @@
         "sde_sample_freq": -1,
         "target_kl": 0.01,
 
-        "device": "cpu"
+        "device": "cuda"
     },
     "policy_params": {
         "custom_policy_params": {
