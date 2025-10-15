@@ -1,0 +1,10 @@
+8 cpu 8 env = 200 it/s
+8 cpu 16 env = 280 it/s (cpu bottleneck)
+
+32 cpu 16 env = 340 it/s
+32 cpu 32 env = 560 it/s (2000% CPU) (long term spike 3000% CPU) 
+32 cpu 48 env = 650 it/s (3000% CPU)
+32 cpu 64 env = 720 it/s (3100% CPU)
+
+1 GPU 20 cpu 16 env = 340 it/s (1000% CPU) (0% GPU)
+1 GPU 20 cpu 32 env = 420 it/s (1700% CPU) (1% GPU)
