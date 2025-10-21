@@ -149,12 +149,17 @@
                             },
                             {
                                 "type":"range",
-                                "range":[35,39],
+                                "range":[35,36],
+                                "comment":"OSL ankle right activation"
+                            },
+                            {
+                                "type":"range",
+                                "range":[36,40],
                                 "comment":"4 foot force"
                             },
                             {
                                 "type":"range",
-                                "range":[39,40],
+                                "range":[40,41],
                                 "comment":"target velocity"
                             }
                         ],
@@ -200,12 +205,17 @@
                             },
                             {
                                 "type":"range",
-                                "range":[35,39],
+                                "range":[35,36],
+                                "comment":"OSL ankle right activation"
+                            },
+                            {
+                                "type":"range",
+                                "range":[36,40],
                                 "comment":"4 foot force"
                             },
                             {
                                 "type":"range",
-                                "range":[39,40],
+                                "range":[40,41],
                                 "comment":"target velocity"
                             }
                         ],
@@ -245,12 +255,17 @@
                             },
                             {
                                 "type":"range",
-                                "range":[35,39],
+                                "range":[35,36],
+                                "comment":"OSL ankle right activation"
+                            },
+                            {
+                                "type":"range",
+                                "range":[36,40],
                                 "comment":"4 foot force"
                             },
                             {
                                 "type":"range",
-                                "range":[39,40],
+                                "range":[40,41],
                                 "comment":"target velocity"
                             }
                         ]
