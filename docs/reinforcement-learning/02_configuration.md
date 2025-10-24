@@ -56,7 +56,7 @@ TrainSessionConfigBase
 - [General Parameters](#general-parameters)
 - [Logger Parameters](#logger-parameters)
 - [Environment Parameters](#environment-parameters)
-- [PPO Parameters](#PPO-Parameters)
+- [A2C Parameters](#A2C-Parameters)
 - [Policy Parameters](#policy-parameters)
 - [Evaluate Parameters](#evaluate-parameters)
 
@@ -120,9 +120,9 @@ TrainSessionConfigBase
 | `joint_constraint_force_penalty` | Joint constraint force penalty | 1.0 |
 | `foot_force_penalty` | Foot force penalty | 0.5 |
 
-### PPO Parameters
-> For more detailed explanations of each PPO parameter, please refer to the Stable-Baselines3 documentation:  
-> https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html#parameters
+### A2C Parameters
+> For more detailed explanations of each A2C parameter, please refer to the Stable-Baselines3 documentation:  
+> https://stable-baselines3.readthedocs.io/en/master/modules/a2c.html#parameters
 
 
 | Parameter | Description | Example |

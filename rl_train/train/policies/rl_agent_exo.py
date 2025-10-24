@@ -23,9 +23,9 @@ from rl_train.train.train_configs.config_imiatation_exo import ExoImitationTrain
 import torch
 torch.autograd.set_detect_anomaly(True)
 
-from rl_train.train.policies.rl_agent_base import BasePPOCustomNetwork, BaseCustomActorCriticPolicy
+from rl_train.train.policies.rl_agent_base import BaseCustomNetwork, BaseCustomActorCriticPolicy
 
-class CustomNetworkHumanExo(BasePPOCustomNetwork):
+class CustomNetworkHumanExo(BaseCustomNetwork):
     def __init__(self, observation_space: spaces.Space,
                     action_space: spaces.Space,
                     custom_policy_params: ExoImitationTrainSessionConfig.PolicyParams.CustomPolicyParams,
@@ -91,7 +91,7 @@ class HumanExoActorCriticPolicy(BaseCustomActorCriticPolicy):
         return ExoImitationTrainSessionConfig.PolicyParams.CustomPolicyParams
     def _build_policy_network(self, observation_space: spaces.Space,
                               action_space: spaces.Space,
-                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BasePPOCustomNetwork:
+                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BaseCustomNetwork:
         return CustomNetworkHumanExo(observation_space,
                                     action_space,
                                     custom_policy_params)

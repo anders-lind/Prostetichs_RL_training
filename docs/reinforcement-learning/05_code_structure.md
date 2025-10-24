@@ -16,7 +16,7 @@ This page provides an overview of the directory layout and the main responsibili
 | Script | Purpose |
 |--------|---------|
 | `run_sim_minimal.py` | Quickly spin up an environment and roll **random actions** for smoke-testing the simulation. |
-| `run_train.py` | Main **training launcher**. Reads a JSON config, constructs environments, and starts Stable-Baselines3 PPO training. |
+| `run_train.py` | Main **training launcher**. Reads a JSON config, constructs environments, and starts Stable-Baselines3 A2C training. |
 | `run_policy_eval.py` | Replay a **trained policy** in evaluation mode and generate analysis artefacts. |
 
 All three scripts accept a rich set of CLI flags so that most hyper-parameters can be overridden without editing the JSON config files.
@@ -62,7 +62,7 @@ rl_train/
 | `environment_handler.py` | `EnvironmentHandler` | Factory that instantiates and vectorises envs based on JSON config. |
 
 ### `train/`
-*Launch, configure, and extend PPO training*
+*Launch, configure, and extend A2C training*
 
 * **`train_configs/`** – Dozens of ready-made JSON presets. The file name usually describes the experiment (`imitation_tutorial_22_separated_net_partial_obs.json`).
 * **`train_commands/`** – Helper shell scripts or `*.sh` bundles so long experiments can be reproduced easily on a cluster.
@@ -92,7 +92,7 @@ Contains reference gait trajectories (e.g., **NPZ** files) used for imitation or
 
 1. **`run_train.py`** loads a JSON config → constructs an `EnvironmentHandler`.
 2. The handler creates multiple **`MyoAssistLegImitationEnv`** instances and wraps them using SB3’s `SubprocVecEnv`.
-3. A PPO policy (custom or default) is initialised and starts learning.
+3. An A2C policy (custom or default) is initialised and starts learning.
 4. Every *k* steps `LearningCallback` saves:
    - `trained_models/model_<steps>.zip`
    - `train_log.json`

@@ -1,10 +1,10 @@
-from rl_train.train.policies.rl_agent_base import BasePPOCustomNetwork, BaseCustomActorCriticPolicy
+from rl_train.train.policies.rl_agent_base import BaseCustomNetwork, BaseCustomActorCriticPolicy
 import torch as th
 from torch import nn
 from gymnasium import spaces
 import rl_train.train.train_configs.config as myoassist_config
 import rl_train.train.train_configs.config_imitation as myoassist_config_imitation
-class HumanPPOCustomNetwork(BasePPOCustomNetwork):
+class HumanCustomNetwork(BaseCustomNetwork):
 
     def forward_actor(self, obs: th.Tensor) -> th.Tensor:
         return self.policy_net(obs)
@@ -44,8 +44,8 @@ class HumanActorCriticPolicy(BaseCustomActorCriticPolicy):
         return myoassist_config_imitation.ImitationTrainSessionConfig.PolicyParams.CustomPolicyParams
     def _build_policy_network(self, observation_space: spaces.Space,
                               action_space: spaces.Space,
-                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BasePPOCustomNetwork:
-        return HumanPPOCustomNetwork(observation_space,
+                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BaseCustomNetwork:
+        return HumanCustomNetwork(observation_space,
                                                     action_space,
                                                     custom_policy_params)
     # Custom reset network

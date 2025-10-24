@@ -32,7 +32,7 @@ if(torch.cuda.is_available()):
 else:
     print("Device: cpu")
 
-class BasePPOCustomNetwork(nn.Module):
+class BaseCustomNetwork(nn.Module):
     def __init__(
         self,
         observation_space: spaces.Space,
@@ -75,7 +75,7 @@ class BaseCustomActorCriticPolicy(BasePolicy):
         observation_space: spaces.Space,
         action_space: spaces.Space,
         lr_schedule: Callable[[float], float],
-        use_sde: bool = False,# Should be here for PPO (without it, it will throw an error)
+    use_sde: bool = False, # Kept for SB3 compatibility (state-dependent exploration); required by some SB3 policies
         *args,
         **kwargs,
     ):
@@ -108,8 +108,8 @@ class BaseCustomActorCriticPolicy(BasePolicy):
         return myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams
     def _build_policy_network(self, observation_space: spaces.Space,
                               action_space: spaces.Space,
-                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BasePPOCustomNetwork:
-        raise NotImplementedError("_build_policy_network should return a BasePPOCustomNetwork or it's subclass")
+                              custom_policy_params: myoassist_config.TrainSessionConfigBase.PolicyParams.CustomPolicyParams) -> BaseCustomNetwork:
+        raise NotImplementedError("_build_policy_network should return a BaseCustomNetwork or it's subclass")
     # def _build_mlp_extractor(self) -> None:
     #     """This is called by the parent class but we don't need it"""
     #     pass

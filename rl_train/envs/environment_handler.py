@@ -30,7 +30,9 @@ class EnvironmentHandler:
                 if is_rendering_on:
                     env.mujoco_render_frames = True
                 config.env_params.num_envs = 1
-                config.ppo_params.n_steps = config.ppo_params.batch_size
+                # For single-process rendering/evaluation we don't adjust
+                # A2C rollout length automatically. Users should set
+                # `config.a2c_params.n_steps` in their configs if needed.
             else:
                 env = SubprocVecEnv([lambda: (gym.make(config.env_params.env_id, 
                                                     **gym_make_args)).unwrapped 
@@ -141,32 +143,38 @@ class EnvironmentHandler:
             print(f"Using HumanActorCriticPolicy")
         if trained_model_path is not None:
             print(f"Loading trained model from {trained_model_path}")
-            model = stable_baselines3.PPO.load(trained_model_path,
+            model = stable_baselines3.A2C.load(trained_model_path,
                                             env=env,
                                             custom_objects = {"policy_class": policy_class},
                                             )
         elif config.env_params.prev_trained_policy_path:
             print(f"Loading previous trained policy from {config.env_params.prev_trained_policy_path}")
             # when should I reset the (value)network?
-            model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
+            # Filter A2C configuration parameters
+            raw_params = DictionableDataclass.to_dict(config.a2c_params)
+            a2c_allowed = {"learning_rate", "n_steps", "gamma", "gae_lambda", "ent_coef", "vf_coef", "max_grad_norm", "use_rms_prop", "rms_prop_eps", "use_sde", "sde_sample_freq", "device"}
+            filtered_params = {k: v for k, v in raw_params.items() if k in a2c_allowed}
+            model = stable_baselines3.A2C.load(config.env_params.prev_trained_policy_path,
                                             env=env,
                                             custom_objects = {"policy_class": policy_class},
-
-                                            # policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
                                             verbose=2,
-                                            **DictionableDataclass.to_dict(config.ppo_params),
+                                            **filtered_params,
                                             )
             # print(f"Resetting network: {config.custom_policy_params.reset_shared_net_after_load=}, {config.custom_policy_params.reset_policy_net_after_load=}, {config.custom_policy_params.reset_value_net_after_load=}")
             model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
                                     reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
                                     reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
         else:
-            model = stable_baselines3.PPO(
+            # Create A2C model. Use A2C params from config.
+            raw_params = DictionableDataclass.to_dict(config.a2c_params)
+            a2c_allowed = {"learning_rate", "n_steps", "gamma", "gae_lambda", "ent_coef", "vf_coef", "max_grad_norm", "use_rms_prop", "rms_prop_eps", "use_sde", "sde_sample_freq", "device"}
+            filtered_params = {k: v for k, v in raw_params.items() if k in a2c_allowed}
+            model = stable_baselines3.A2C(
                 policy=policy_class,
                 env=env,
                 policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
                 verbose=2,
-                **DictionableDataclass.to_dict(config.ppo_params),
+                **filtered_params,
             )
         return model
     @staticmethod
