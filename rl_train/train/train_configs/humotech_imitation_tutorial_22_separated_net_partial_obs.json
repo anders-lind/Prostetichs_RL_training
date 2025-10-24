@@ -109,8 +109,8 @@
     },
     "sac_params": {
         "learning_rate": 0.0001,
-        "buffer_size": 2000000,
-        "batch_size": 2048,
+        "buffer_size": 3000000,
+        "batch_size": 4096,
         "tau": 0.005,
         "gamma": 0.99,
         "train_freq": 512,
