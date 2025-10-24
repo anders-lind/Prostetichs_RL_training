@@ -134,4 +134,20 @@ class TrainSessionConfigBase:
         device: str = "cpu"
     ppo_params: PPOParams = field(default_factory=PPOParams)
 
+    @dataclass
+    class SACParams:
+        # Common SAC parameters (kept minimal and safe)
+        learning_rate: float = 3e-4
+        buffer_size: int = 1000000
+        batch_size: int = 256
+        tau: float = 0.005
+        gamma: float = 0.99
+        train_freq: int = 1
+        gradient_steps: int = 1
+        ent_coef: float = 0.01
+        target_update_interval: int = 1
+        device: str = "cpu"
+
+    sac_params: SACParams = field(default_factory=SACParams)
+
     

@@ -30,7 +30,6 @@ class EnvironmentHandler:
                 if is_rendering_on:
                     env.mujoco_render_frames = True
                 config.env_params.num_envs = 1
-                config.ppo_params.n_steps = config.ppo_params.batch_size
             else:
                 env = SubprocVecEnv([lambda: (gym.make(config.env_params.env_id, 
                                                     **gym_make_args)).unwrapped 
@@ -131,43 +130,45 @@ class EnvironmentHandler:
     @staticmethod
     def get_stable_baselines3_model(config:TrainSessionConfigBase, env, trained_model_path:str|None=None):
         import stable_baselines3
-        from rl_train.train.policies.rl_agent_human import HumanActorCriticPolicy
-        from rl_train.train.policies.rl_agent_exo import HumanExoActorCriticPolicy
-        if config.env_params.env_id in ["myoAssistLegImitationExo-v0"]:
-            policy_class = HumanExoActorCriticPolicy
-            print(f"Using HumanExoActorCriticPolicy")
-        else:
-            policy_class = HumanActorCriticPolicy
-            print(f"Using HumanActorCriticPolicy")
-        if trained_model_path is not None:
-            print(f"Loading trained model from {trained_model_path}")
-            model = stable_baselines3.PPO.load(trained_model_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
-                                            )
-        elif config.env_params.prev_trained_policy_path:
-            print(f"Loading previous trained policy from {config.env_params.prev_trained_policy_path}")
-            # when should I reset the (value)network?
-            model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
+        from rl_train.train.policies.rl_agent_exo_sac import HumanExoSACPolicy
 
-                                            # policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
-                                            verbose=2,
-                                            **DictionableDataclass.to_dict(config.ppo_params),
-                                            )
-            # print(f"Resetting network: {config.custom_policy_params.reset_shared_net_after_load=}, {config.custom_policy_params.reset_policy_net_after_load=}, {config.custom_policy_params.reset_value_net_after_load=}")
-            model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
-                                    reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
-                                    reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
+        # For SAC, always use the SAC-specific policy
+        if config.env_params.env_id in ["myoAssistLegImitationExo-v0"]:
+            policy_class = HumanExoSACPolicy
+            print(f"Using HumanExoSACPolicy")
         else:
-            model = stable_baselines3.PPO(
+            # For now, only supporting exo environments with SAC
+            raise ValueError("SAC currently only supports exoskeleton environments")
+
+        # SAC-only model creation / loading
+        if trained_model_path is not None:
+            print(f"Loading trained SAC model from {trained_model_path}")
+            model = stable_baselines3.SAC.load(trained_model_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                )
+        elif config.env_params.prev_trained_policy_path:
+            print(f"Loading previous trained SAC policy from {config.env_params.prev_trained_policy_path}")
+            model = stable_baselines3.SAC.load(config.env_params.prev_trained_policy_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                verbose=2,
+                                                **DictionableDataclass.to_dict(config.sac_params),
+                                                )
+            # Reset network if available on policy
+            if hasattr(model.policy, 'reset_network'):
+                model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
+                                            reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
+                                            reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
+        else:
+            model = stable_baselines3.SAC(
                 policy=policy_class,
                 env=env,
                 policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
                 verbose=2,
-                **DictionableDataclass.to_dict(config.ppo_params),
+                **DictionableDataclass.to_dict(config.sac_params),
             )
+
         return model
     @staticmethod
     def updateconfig_from_model_policy(config, model):

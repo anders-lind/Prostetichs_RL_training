@@ -105,8 +105,7 @@ class HumanExoActorCriticPolicy(BaseCustomActorCriticPolicy):
         info = self.policy_network.network_index_handler.net_indexing_info
         if "exo_actor" not in info:
             return idxs
-        print(f"info: {info}")
-        print(f'info: {info["exo_actor"]["action"][0]=}')
+        
         for mapping in info["exo_actor"]["action"]:
             if mapping["type"] == "range_mapping":
                 start_action, end_action = mapping["range_action"]
@@ -178,8 +177,6 @@ class HumanExoActorCriticPolicy(BaseCustomActorCriticPolicy):
     def reset_network(self, reset_shared_net: bool = False, reset_policy_net: bool = False, reset_value_net: bool = False):
         """Reset the networks if specified"""
         if reset_policy_net:
-            print(f"Resetting policy network")
             self.policy_network.reset_policy_networks()
         if reset_value_net:
-            print(f"Resetting value network")
             self.policy_network.reset_value_network()

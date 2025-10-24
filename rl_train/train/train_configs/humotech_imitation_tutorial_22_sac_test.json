@@ -1,9 +1,8 @@
 {
-    "comment":"This is a test configuration for the RL training. very short, rendering enabled",
     "total_timesteps": 1000,
     "evaluate_param_list":[
         {
-            "num_timesteps": 100,
+            "num_timesteps": 200,
             "min_target_velocity": 1.25,
             "max_target_velocity": 1.25,
             "target_velocity_period": 2,
@@ -14,15 +13,14 @@
         }
     ],
     "logger_params": {
-        "logging_frequency": 1,
-        "evaluate_frequency": 1
+        "logging_frequency": 16
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
         "num_envs": 1,
         "seed": 1234,
         "safe_height": 0.7,
-        "out_of_trajectory_threshold": 0.6,
+        "out_of_trajectory_threshold": 0.2,
         "flag_random_ref_index": true,
         "control_framerate": 30,
         "physics_sim_framerate": 1200,
@@ -91,7 +89,7 @@
             "foot_force_penalty": 0.5
         },
         "custom_max_episode_steps": 1000,
-        "model_path": "models/22muscle_2D/myoLeg22_2D_TUTORIAL.xml",
+        "model_path": "models/22muscle_2D/myoLeg22_2D_OPENEXO.xml",
         "reference_data_path": "rl_train/reference_data/short_reference_gait.npz",
         "reference_data_keys": ["ankle_angle_l", "ankle_angle_r",
                                 "hip_flexion_l", "hip_flexion_r",
@@ -101,22 +99,16 @@
                                 ],
         "prev_trained_policy_path": null
     },
-    "ppo_params": {
+    "sac_params": {
         "learning_rate": 0.0001,
-        "n_steps": 256,
+        "buffer_size": 100000,
         "batch_size": 256,
-        "n_epochs": 10,
+        "tau": 0.005,
         "gamma": 0.99,
-        "gae_lambda": 0.95,
-        "clip_range": 0.2,
-        "clip_range_vf": 100,
-        "ent_coef": 0.001,
-        "vf_coef": 0.5,
-        "max_grad_norm": 0.5,
-        "use_sde": false,
-        "sde_sample_freq": -1,
-        "target_kl": 0.01,
-
+        "train_freq": 1,
+        "gradient_steps": 1,
+        "ent_coef": 0.01,
+        "target_update_interval": 1,
         "device": "cpu"
     },
     "policy_params": {

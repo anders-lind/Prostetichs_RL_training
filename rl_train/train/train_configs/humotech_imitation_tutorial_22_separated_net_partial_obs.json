@@ -99,22 +99,16 @@
                                 ],
         "prev_trained_policy_path": null
     },
-    "ppo_params": {
+    "sac_params": {
         "learning_rate": 0.0001,
-        "n_steps": 128,
-        "batch_size": 8192,
-        "n_epochs": 30,
+        "buffer_size": 1000000,
+        "batch_size": 256,
+        "tau": 0.005,
         "gamma": 0.99,
-        "gae_lambda": 0.95,
-        "clip_range": 0.2,
-        "clip_range_vf": 100,
-        "ent_coef": 0.001,
-        "vf_coef": 0.5,
-        "max_grad_norm": 0.5,
-        "use_sde": false,
-        "sde_sample_freq": -1,
-        "target_kl": 0.01,
-
+        "train_freq": 1,
+        "gradient_steps": 1,
+        "ent_coef": "auto",
+        "target_update_interval": 1,
         "device": "cpu"
     },
     "policy_params": {
