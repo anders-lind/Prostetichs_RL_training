@@ -1,4 +1,21 @@
 from dataclasses import dataclass, field
+
+# 1. ADD THIS NEW DATACLASS
+@dataclass
+class SACParams:
+    learning_rate: float = 3e-4
+    buffer_size: int = 1_000_000       # Size of the replay buffer
+    learning_starts: int = 10000       # How many steps to collect before training
+    batch_size: int = 256              # Batch size for training
+    tau: float = 0.005                 # Soft update coefficient
+    gamma: float = 0.99                # Discount factor
+    train_freq: int = 1                # Update the model every 'train_freq' steps
+    gradient_steps: int = 1            # How many gradient steps to do per update
+    use_sde: bool = False              # Whether to use gSDE for exploration
+    sde_sample_freq: int = -1          # Sample new SDE noise every n steps
+    device: str = "cpu"
+    
+
 @dataclass
 class TrainSessionConfigBase:
     total_timesteps: int = 1000
@@ -56,82 +73,12 @@ class TrainSessionConfigBase:
         terrain_params: str = ""
         
     env_params: EnvParams = field(default_factory=EnvParams)
-    
 
-    """
-    used in TrainAnalyzer
-        total_timesteps: int = 300
-        min_target_velocity: float = 1.25
-        max_target_velocity: float = 1.25
-        target_velocity_period: float = 3
-        velocity_mode: str = "SINUSOIDAL"
-        cam_type: str = "follow"
-        cam_distance: float = 2.5
-        visualize_activation: bool = True
-    """
     evaluate_param_list: list[dict] = field(default_factory=list[dict])
 
-    @dataclass
-    class PolicyParams:
-        '''
-        ActorCriticPolicy parameters:
-            observation_space: spaces.Space,
-            action_space: spaces.Space,
-            lr_schedule: Schedule,
-            net_arch: Optional[Union[list[int], dict[str, list[int]]]] = None,
-            activation_fn: type[nn.Module] = nn.Tanh,
-            ortho_init: bool = True,
-            use_sde: bool = False,
-            log_std_init: float = 0.0,
-            full_std: bool = True,
-            use_expln: bool = False,
-            squash_output: bool = False,
-            features_extractor_class: type[BaseFeaturesExtractor] = FlattenExtractor,
-            features_extractor_kwargs: Optional[dict[str, Any]] = None,
-            share_features_extractor: bool = True,
-            normalize_images: bool = True,
-            optimizer_class: type[th.optim.Optimizer] = th.optim.Adam,
-            optimizer_kwargs: Optional[dict[str, Any]] = None,
-        '''
-        # @dataclass
-        # class CustomPolicyParams:
-        #     reset_shared_net: bool = False
-        #     reset_policy_net: bool = False
-        #     reset_value_net: bool = False
-        # custom_policy_params: CustomPolicyParams = field(default_factory=CustomPolicyParams)
-        @dataclass
-        class CustomPolicyParams:
-            # For curriculum learning
-            reset_shared_net_after_load: bool = False
-            reset_policy_net_after_load: bool = False
-            reset_value_net_after_load: bool = False
-            # reset_log_std_after_load: bool = False
-
-            net_arch: dict = field(default_factory=dict)
-            log_std_init: float = field(default=-2.0)
-
-            net_indexing_info: dict = field(default_factory=dict)
-        custom_policy_params: CustomPolicyParams = field(default_factory=CustomPolicyParams)
-
-    policy_params: PolicyParams = field(default_factory=PolicyParams)
-        
-    @dataclass
-    class PPOParams:
-        learning_rate: float = 3e-4
-        n_steps: int = 4096
-        batch_size: int = 2048
-        n_epochs: int = 10
-        gamma: float = 0.99
-        gae_lambda: float = 0.95
-        clip_range: float = 0.2
-        clip_range_vf: float = 0.2
-        ent_coef: float = 0.01
-        vf_coef: float = 0.5
-        max_grad_norm: float = 0.5
-        use_sde: bool = False
-        sde_sample_freq: int = -1
-        target_kl: float = None
-        device: str = "cpu"
-    ppo_params: PPOParams = field(default_factory=PPOParams)
-
+    # 2. REMOVE THE PolicyParams DATACLASS (it was here)
     
+    # 3. REMOVE THE PPOParams DATACLASS (it was here)
+
+    # 4. REPLACE policy_params and ppo_params WITH sac_params
+    sac_params: SACParams = field(default_factory=SACParams)

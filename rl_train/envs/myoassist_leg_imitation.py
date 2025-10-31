@@ -35,73 +35,59 @@ class ImitationCustomLearningCallback(BaseCustomLearningCallback):
         self.reward_accumulate = DictionableDataclass.to_dict(self.reward_accumulate)
         for key in self.reward_accumulate.keys():
             self.reward_accumulate[key] = 0
-    #called after all envs step done
-    def _on_step(self) -> bool:
-        # print("======================self.locals    ======================")
-        # # pprint.pprint(self.locals)
-        # print(f"DEBUG:: {len(self.locals['infos'])=}")
-        # for idx, info in enumerate(self.locals['infos']):
-        #     print(f"DEBUG:: {idx=} {info['rwd_dict']=}")
-        # print("======================self.locals    ======================")
 
-        subprocvec_env:SubprocVecEnv = self.model.get_env()
-        # print(f"DEBUG:: {subprocvec_env=}")
-        # print(f"DEBUG:: {subprocvec_env.env_method('subproc_env_test', 'This is param from learning callback')=}")
+    # called after all envs step done
+    def _on_step(self) -> bool:
+        
+        # --- 1. Original _on_step logic: Accumulate custom rewards ---
         for info in self.locals["infos"]:
             for key in self.reward_accumulate.keys():
                 self.reward_accumulate[key] += info["rwd_dict"][key]
         
-
-        super()._on_step()
+        # --- 2. Call parent's _on_step ---
+        super()._on_step() 
             
-        return True
-    def _on_rollout_start(self) -> None:
-        super()._on_rollout_start()
+        # --- 3. NEW: Moved logic from _on_rollout_end ---
+        if self.n_calls % self.log_rollout_freq == 0:
+            
+            # Check if any episodes actually finished during this log period
+            if np.sum(self.episode_counts) == 0:
+                return True # Continue training, nothing to log
 
-    def _on_rollout_end(self, write_log: bool = True) -> "ImitationTrainCheckpointData":
-        log_data_base = super()._on_rollout_end(write_log=False)
-        if log_data_base is None:
-            return
-        log_data = ImitationTrainCheckpointData(
-            **log_data_base.__dict__,
-            reward_weights=DictionableDataclass.to_dict(self._reward_weights),
-            reward_accumulate=self.reward_accumulate.copy(),
-        )
-        if write_log:
+            # Calculate stats
+            rollout_reward_mean = np.sum(self.rewards_sum) / np.sum(self.episode_counts)
+            rollout_ep_len_mean = np.sum(self.episode_length_counts) / np.sum(self.episode_counts)
+            
+            # --- 5. Original logging logic from _on_rollout_end ---
+            log_data = ImitationTrainCheckpointData(
+                num_timesteps=self.num_timesteps,
+                average_reward_per_episode=rollout_reward_mean,
+                average_num_timestep=rollout_ep_len_mean,
+                
+                # Add the imitation-specific fields
+                reward_weights=DictionableDataclass.to_dict(self._reward_weights),
+                reward_accumulate=self.reward_accumulate.copy(),
+            )
+            
+            # Write the log file
             self.train_log_handler.add_log_data(log_data)
             self.train_log_handler.write_json_file()
-        
-        self.rewards_sum = np.zeros(self.training_env.num_envs)
-        self.episode_counts = np.zeros(self.training_env.num_envs)
-        self.episode_length_counts = np.zeros(self.training_env.num_envs)
-        
-
-        ## ARA (Disabled)
-
-        # print(f"DEBUG:: {self.reward_accumulate=}")
-        # joint_rewards = {}
-        # for key in self.reward_accumulate.keys():
-        #     # print(f"DEBUG:: {key=} {self.reward_accumulate[key]=}")
-        #     if MyoLeg18Imitation.Q_POS_DIFF_REWARD_KEY_PREFIX in key:
-        #         joint_rewards[key] = self.reward_accumulate[key]
-        #     self.reward_accumulate[key] = 0
-        # reward_mean = 0
-        # for key in joint_rewards.keys():
-        #     reward_mean += joint_rewards[key]
-        # reward_mean /= len(joint_rewards)
-        # joint_reward_deviations = {key: (joint_rewards[key] - reward_mean)/reward_mean for key in joint_rewards.keys()}
-
-        # for key in joint_reward_deviations.keys():
-        #     new_reward_weight = getattr(self._reward_weights, key) - self._auto_reward_adjust_params.learning_rate * joint_reward_deviations[key]
-        #     setattr(self._reward_weights, key, new_reward_weight)
-        # subprocvec_env:SubprocVecEnv = self.model.get_env()
-        # subprocvec_env.env_method('set_reward_weights', self._reward_weights)
-        # print(f"DEBUG:: {self._reward_weights=}")
-
+            
+            # --- 6. Reset ALL counters ---
+            self.rewards_sum = np.zeros(self.training_env.num_envs)
+            self.episode_counts = np.zeros(self.training_env.num_envs)
+            self.episode_length_counts = np.zeros(self.training_env.num_envs)
+            
+            for key in self.reward_accumulate.keys():
+                self.reward_accumulate[key] = 0
+            
+        return True # Continue training
 
 ##############################################################################
-
-
+#
+#  MyoAssistLegImitation Class
+#
+##############################################################################
 
 class MyoAssistLegImitation(MyoAssistLegBase):
     
@@ -287,6 +273,11 @@ class MyoAssistLegImitation(MyoAssistLegBase):
         if data is not None:
             # self._follow_reference_motion(False)
             self._reference_data_length = self._reference_data["metadata"]["resampled_data_length"]
+            
+            # --- ADD THIS LINE ---
+            print(f"\n\nDEBUG: self._reference_data_length = {self._reference_data_length}\n\n")
+            # --- END ---
+            
         else:
             raise ValueError("Reference data is not set")
 
@@ -294,6 +285,9 @@ class MyoAssistLegImitation(MyoAssistLegBase):
         rng = np.random.default_rng()# TODO: refactoring random to use seed
         
         if self._flag_random_ref_index:
+            #
+            # --- THIS IS THE FIXED LINE ---
+            #
             self._imitation_index = rng.integers(0, int(self._reference_data_length * 0.8))
         else:
             self._imitation_index = 0
@@ -302,7 +296,7 @@ class MyoAssistLegImitation(MyoAssistLegBase):
         # self.sim.data.qpos = new_qpos
         self._follow_reference_motion(False)
         
-        obs = super().reset(reset_qpos= self.sim.data.qpos, reset_qvel=self.sim.data.qvel, **kwargs)
+        obs = super().reset(reset_qpos= self.sim.data.qpos, reset_qvel=self.sim.data.qpos, **kwargs)
         return obs
 
     # override

@@ -52,14 +52,11 @@ class BaseCustomLearningCallback(BaseCallback):
 
             # ------------------------------------------------------------------
             # Safeguard: 'info' may be None or may not contain 'rwd_dict'.
-            # In such cases we skip per-key reward accumulation instead of
-            # triggering a `TypeError: 'NoneType' object is not subscriptable`.
             # ------------------------------------------------------------------
             info_dict = None
             try:
                 info_dict = self.locals["infos"][idx]
             except (IndexError, KeyError):
-                # Defensive: infos array shape mismatch → just ignore for now
                 info_dict = None
 
             if info_dict and isinstance(info_dict, dict) and "rwd_dict" in info_dict:
@@ -100,25 +97,37 @@ class BaseCustomLearningCallback(BaseCallback):
                 value = self.logger.name_to_value.get(key, default)
                 return value.item() if hasattr(value, 'item') else value
             
-            # average_reward_dict_per_episode=[{key:self.episode_reward_dict_sum[idx][key] / self.episode_counts[idx] for key in self.episode_reward_dict_sum[idx].keys()} for idx in range(self.training_env.num_envs)]
-            # Calculate the average reward for each key across all environments
-            # average_reward_dict_per_episode={key:sum(average_reward_dict_per_episode[idx][key] for idx in range(self.training_env.num_envs)) / self.training_env.num_envs for key in average_reward_dict_per_episode[0].keys()}
-            # If there are no keys in self.episode_reward_dict_sum[idx], set all values to 0
-            for idx in range(self.training_env.num_envs):
-                if not self.episode_reward_dict_sum[idx]:
-                    self.episode_reward_dict_sum[idx] = {key: 0 for key in self.episode_reward_dict_sum[0].keys()}
+            # --- START OF FIX ---
+            
+            # Calculate total episodes safely
+            total_episodes = np.sum(self.episode_counts)
 
-            average_reward_dict_per_episode = {
-                key: (
-                    sum(
-                        self.episode_reward_dict_sum[idx][key]
-                        for idx in range(self.training_env.num_envs)
-                    ) / sum(self.episode_counts)
-                )
-                for key in self.episode_reward_dict_sum[0].keys()
-            }
+            # If no episodes finished, log default values and skip division
+            if total_episodes == 0:
+                average_reward_dict_per_episode = {}
+                avg_ep_len = 0.0
+                avg_ep_rew = 0.0
+            else:
+                # Calculate average reward dict per episode
+                for idx in range(self.training_env.num_envs):
+                    if not self.episode_reward_dict_sum[idx]:
+                        self.episode_reward_dict_sum[idx] = {key: 0 for key in self.episode_reward_dict_sum[0].keys()}
 
+                average_reward_dict_per_episode = {
+                    key: (
+                        sum(
+                            self.episode_reward_dict_sum[idx][key]
+                            for idx in range(self.training_env.num_envs)
+                        ) / total_episodes # Use safe total_episodes
+                    )
+                    for key in self.episode_reward_dict_sum[0].keys()
+                }
+                
+                # Calculate average length and reward
+                avg_ep_len = (np.sum(self.episode_length_counts) / total_episodes).item()
+                avg_ep_rew = (np.sum(self.rewards_sum) / total_episodes).item()
 
+            # --- END OF FIX ---
 
             log_data = TrainCheckpointData(
                 approx_kl=get_logger_value('train/approx_kl'),
@@ -134,8 +143,8 @@ class BaseCustomLearningCallback(BaseCallback):
                 std=get_logger_value('train/std'),
                 value_loss=get_logger_value('train/value_loss'),
                 num_timesteps=self.model.num_timesteps,
-                average_num_timestep=(np.sum(self.episode_length_counts) / np.sum(self.episode_counts) if np.sum(self.episode_counts) != 0 else np.array(0)).item(),
-                average_reward_per_episode=(np.sum(self.rewards_sum) / np.sum(self.episode_counts) if np.sum(self.episode_counts) != 0 else np.array(0)).item(),
+                average_num_timestep=avg_ep_len,       # Use safe variable
+                average_reward_per_episode=avg_ep_rew,  # Use safe variable
                 average_reward_dict_per_episode=average_reward_dict_per_episode,
                 time=f"{datetime.now().strftime('%Y%m%d-%H%M%S.%f')}",
             )

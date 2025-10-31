@@ -28,7 +28,7 @@ VERSION = {
     "version": "0.3.0",  # MAJOR.MINOR.PATCH
     **get_git_info()
 }
-def ppo_evaluate_with_rendering(config):
+def sac_evaluate_with_rendering(config):
     seed = 1234
     np.random.seed(seed)
 
@@ -45,7 +45,7 @@ def ppo_evaluate_with_rendering(config):
             obs, info = env.reset()
 
     env.close()
-def ppo_train_with_parameters(config, train_time_step, is_rendering_on, train_log_handler):
+def sac_train_with_parameters(config, train_time_step, is_rendering_on, train_log_handler):
     seed = 1234
     np.random.seed(seed)
 
@@ -96,10 +96,9 @@ if __name__ == '__main__':
     train_log_handler = train_log_handler.TrainLogHandler(log_dir)
 
     if args.flag_realtime_evaluate:
-        ppo_evaluate_with_rendering(config)
+        sac_evaluate_with_rendering(config)
     else:
-        ppo_train_with_parameters(config,
+        sac_train_with_parameters(config,
                                 train_time_step=config.total_timesteps,
                                 is_rendering_on=args.flag_rendering,
                                 train_log_handler=train_log_handler)
-    
