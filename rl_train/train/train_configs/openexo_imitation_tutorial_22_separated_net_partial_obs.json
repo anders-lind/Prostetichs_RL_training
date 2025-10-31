@@ -17,7 +17,7 @@
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
-        "num_envs": 128,
+        "num_envs": 172,
         "seed": 1234,
         "safe_height": 0.7,
         "out_of_trajectory_threshold": 0.2,
@@ -102,7 +102,6 @@
     "ppo_params": {
         "learning_rate": 0.0001,
         "n_steps": 128,
-        "batch_size": 8192,
         "n_epochs": 30,
         "gamma": 0.99,
         "gae_lambda": 0.95,
