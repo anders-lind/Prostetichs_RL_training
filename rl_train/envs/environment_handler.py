@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import gymnasium
 from stable_baselines3.common.vec_env import SubprocVecEnv
 from myosuite.utils import gym
 from rl_train.utils.data_types import DictionableDataclass
@@ -26,11 +27,18 @@ class EnvironmentHandler:
         try:
             if is_rendering_on or config.env_params.num_envs == 1:
                 print(f"{config.env_params.env_id=}")
-                env = gym.make(config.env_params.env_id, **gym_make_args).unwrapped
-                if is_rendering_on:
-                    env.mujoco_render_frames = True
+                
+                # Check if this is a simple test environment like CartPole
+                if config.env_params.env_id == "CartPole-v1":
+                    render_mode = "human" if is_rendering_on else None
+                    env = gymnasium.make("CartPole-v1", render_mode=render_mode)
+                else:
+                    env = gym.make(config.env_params.env_id, **gym_make_args).unwrapped
+                    if is_rendering_on and hasattr(env, 'mujoco_render_frames'):
+                        env.mujoco_render_frames = True
+                
                 config.env_params.num_envs = 1
-                config.ppo_params.n_steps = config.ppo_params.batch_size
+                # config.ppo_params.n_steps = config.ppo_params.batch_size
             else:
                 env = SubprocVecEnv([lambda: (gym.make(config.env_params.env_id, 
                                                     **gym_make_args)).unwrapped 
@@ -81,6 +89,7 @@ class EnvironmentHandler:
 
         return ref_data_dict
 
+    @staticmethod
     def get_config_type_from_session_id(session_id):
         # from rl_train.envs import myo_leg_18_reward_per_step
         from rl_train.train.train_configs.config import TrainSessionConfigBase
@@ -94,6 +103,9 @@ class EnvironmentHandler:
             return ImitationTrainSessionConfig
         elif session_id == 'myoAssistLegImitationExo-v0':
             return ExoImitationTrainSessionConfig
+        elif session_id == 'CartPole-v1':
+            # For simple test environments like CartPole, use base config
+            return TrainSessionConfigBase
         raise ValueError(f"Invalid session id: {session_id}")
         
 
@@ -131,14 +143,24 @@ class EnvironmentHandler:
     @staticmethod
     def get_stable_baselines3_model(config:TrainSessionConfigBase, env, trained_model_path:str|None=None):
         import stable_baselines3
+        import gymnasium as gym
         from rl_train.train.policies.rl_agent_human import HumanActorCriticPolicy
         from rl_train.train.policies.rl_agent_exo import HumanExoActorCriticPolicy
-        if config.env_params.env_id in ["myoAssistLegImitationExo-v0"]:
+        
+        # Check if we're dealing with a discrete action space (like CartPole)
+        if isinstance(env.action_space, gym.spaces.Discrete):
+            print(f"Using standard MlpPolicy for discrete action space")
+            policy_class = "MlpPolicy"
+            policy_kwargs = {}  # Use default policy kwargs for standard policies
+        elif config.env_params.env_id in ["myoAssistLegImitationExo-v0"]:
             policy_class = HumanExoActorCriticPolicy
+            policy_kwargs = DictionableDataclass.to_dict(config.policy_params)
             print(f"Using HumanExoActorCriticPolicy")
         else:
             policy_class = HumanActorCriticPolicy
+            policy_kwargs = DictionableDataclass.to_dict(config.policy_params)
             print(f"Using HumanActorCriticPolicy")
+            
         if trained_model_path is not None:
             print(f"Loading trained model from {trained_model_path}")
             model = stable_baselines3.PPO.load(trained_model_path,
@@ -152,19 +174,27 @@ class EnvironmentHandler:
                                             env=env,
                                             custom_objects = {"policy_class": policy_class},
 
-                                            # policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
+                                            # policy_kwargs=policy_kwargs,
                                             verbose=2,
                                             **DictionableDataclass.to_dict(config.ppo_params),
                                             )
-            # print(f"Resetting network: {config.custom_policy_params.reset_shared_net_after_load=}, {config.custom_policy_params.reset_policy_net_after_load=}, {config.custom_policy_params.reset_value_net_after_load=}")
-            model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
-                                    reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
-                                    reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
+            # Only try to reset network if it's a custom policy
+            if hasattr(model.policy, 'reset_network'):
+                model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
+                                        reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
+                                        reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
         else:
-            model = stable_baselines3.PPO(
+            # model = stable_baselines3.PPO(
+            #     policy=policy_class,
+            #     env=env,
+            #     policy_kwargs=policy_kwargs,
+            #     verbose=2,
+            #     **DictionableDataclass.to_dict(config.ppo_params),
+            # )
+            model = stable_baselines3.A2C(
                 policy=policy_class,
                 env=env,
-                policy_kwargs=DictionableDataclass.to_dict(config.policy_params),
+                policy_kwargs=policy_kwargs,
                 verbose=2,
                 **DictionableDataclass.to_dict(config.ppo_params),
             )

@@ -117,21 +117,16 @@ class TrainSessionConfigBase:
         
     @dataclass
     class PPOParams:
-        learning_rate: float = 3e-4
-        n_steps: int = 4096
-        batch_size: int = 2048
-        n_epochs: int = 10
-        gamma: float = 0.99
-        gae_lambda: float = 0.95
-        clip_range: float = 0.2
-        clip_range_vf: float = 0.2
+        # learning_rate: float = 3e-4
+        n_steps: int = 5*2
+        # gamma: float = 0.99
+        # gae_lambda: float = 0.95
         ent_coef: float = 0.01
-        vf_coef: float = 0.5
-        max_grad_norm: float = 0.5
-        use_sde: bool = False
-        sde_sample_freq: int = -1
-        target_kl: float = None
+        # vf_coef: float = 0.5
+        # max_grad_norm: float = 0.5
+        rms_prop_eps: float = 1e-5
+        use_rms_prop: bool = True
+        # use_sde: bool = False
+        # sde_sample_freq: int = -1
         device: str = "cpu"
     ppo_params: PPOParams = field(default_factory=PPOParams)
-
-    

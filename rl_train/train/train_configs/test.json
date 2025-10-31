@@ -14,8 +14,7 @@
         }
     ],
     "logger_params": {
-        "logging_frequency": 1,
-        "evaluate_frequency": 1
+        "logging_frequency": 1
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
@@ -104,7 +103,6 @@
     "ppo_params": {
         "learning_rate": 0.0001,
         "n_steps": 256,
-        "batch_size": 256,
         "n_epochs": 10,
         "gamma": 0.99,
         "gae_lambda": 0.95,
