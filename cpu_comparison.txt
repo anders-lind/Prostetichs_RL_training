@@ -9,3 +9,8 @@
 
 1 GPU 20 cpu 16 env = 340 it/s (1000% CPU) (0% GPU)
 1 GPU 20 cpu 32 env = 420 it/s (1700% CPU) (1% GPU)
+
+
+
+----- A2C -----
+64 PCU, 128 env, 890 it/s, 4300% CPU
