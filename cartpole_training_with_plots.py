@@ -188,8 +188,27 @@ class PlottingCallback(BaseCallback):
         print(f"Training data saved to {csv_filename}")
 
 
-def create_cartpole_config(total_timesteps: int = 20000) -> Dict[str, Any]:
+def create_cartpole_config(total_timesteps: int = 20000, ppo_params: Dict[str, Any] = None) -> Dict[str, Any]:
     """Create optimized CartPole training configuration"""
+    # Use provided ppo_params or defaults
+    if ppo_params is None:
+        ppo_params = {
+            "learning_rate": 0.001,
+            "n_steps": 512,
+            "n_epochs": 4,
+            "gamma": 0.99,
+            "gae_lambda": 0.95,
+            "clip_range": 0.2,
+            "clip_range_vf": 100,
+            "ent_coef": 0.01,
+            "vf_coef": 0.5,
+            "max_grad_norm": 0.5,
+            "use_sde": False,
+            "sde_sample_freq": -1,
+            "target_kl": 0.01,
+            "device": "cpu"
+        }
+    
     return {
         "comment": "CartPole RL training with plotting",
         "total_timesteps": total_timesteps,
@@ -206,39 +225,58 @@ def create_cartpole_config(total_timesteps: int = 20000) -> Dict[str, Any]:
             "seed": 42,
             "num_envs": 1
         },
-        "ppo_params": {
-            "learning_rate": 0.001,
-            "n_steps": 512,
-            "n_epochs": 4,
-            "gamma": 0.99,
-            "gae_lambda": 0.95,
-            "clip_range": 0.2,
-            "clip_range_vf": 100,
-            "ent_coef": 0.01,
-            "vf_coef": 0.5,
-            "max_grad_norm": 0.5,
-            "use_sde": False,
-            "sde_sample_freq": -1,
-            "target_kl": 0.01,
-            "device": "cpu"
-        },
+        "ppo_params": ppo_params,
         "policy_params": {
             "comment": "Using standard MlpPolicy for discrete CartPole environment"
         }
     }
 
 
-def main(total_timesteps: int = 20000, plot_freq: int = 1000):
+def load_ppo_params_from_config(config_path: str) -> Dict[str, Any]:
+    """
+    Load PPO parameters from a JSON config file
+    
+    Args:
+        config_path: Path to the JSON config file
+        
+    Returns:
+        Dictionary containing PPO parameters
+    """
+    print(f"📄 Loading PPO parameters from: {config_path}")
+    
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    if 'ppo_params' not in config:
+        raise ValueError(f"Config file {config_path} does not contain 'ppo_params'")
+    
+    ppo_params = config['ppo_params']
+    print(f"✅ Loaded PPO parameters:")
+    for key, value in ppo_params.items():
+        print(f"   {key}: {value}")
+    
+    return ppo_params
+
+
+def main(total_timesteps: int = 20000, plot_freq: int = 1000, config_file: str = None):
     """
     Main training function with plotting
     
     Args:
         total_timesteps: Total number of training timesteps
         plot_freq: Frequency of plot updates (in timesteps)
+        config_file: Path to JSON config file to load PPO parameters from
     """
     print("🚀 Starting CartPole RL Training with Plotting")
     print(f"Total timesteps: {total_timesteps}")
     print(f"Plot update frequency: {plot_freq}")
+    
+    # Load PPO parameters from config file if provided
+    ppo_params = None
+    if config_file:
+        ppo_params = load_ppo_params_from_config(config_file)
+    else:
+        print("⚠️  No config file provided, using default PPO parameters")
     
     # Create results directory
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -251,7 +289,7 @@ def main(total_timesteps: int = 20000, plot_freq: int = 1000):
     os.makedirs(models_dir, exist_ok=True)
     
     # Create configuration
-    config_dict = create_cartpole_config(total_timesteps)
+    config_dict = create_cartpole_config(total_timesteps, ppo_params=ppo_params)
     config_dict["total_timesteps"] = total_timesteps
     
     # Save configuration
@@ -395,7 +433,10 @@ if __name__ == "__main__":
                        help="Total training timesteps (default: 20000)")
     parser.add_argument("--plot-freq", type=int, default=1000, 
                        help="Plot update frequency in timesteps (default: 1000)")
+    parser.add_argument("--config", type=str, 
+                       default="/home/anders/workspace/project_in_AI/Prostetichs_RL_training/rl_train/train/train_configs/openexo_imitation_tutorial_22_separated_net_partial_obs.json",
+                       help="Path to JSON config file for PPO parameters")
     
     args = parser.parse_args()
     
-    main(total_timesteps=args.timesteps, plot_freq=args.plot_freq)
+    main(total_timesteps=args.timesteps, plot_freq=args.plot_freq, config_file=args.config)
