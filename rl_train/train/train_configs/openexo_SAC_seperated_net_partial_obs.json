@@ -108,7 +108,7 @@
         "tau": 0.005,
         "gamma": 0.99,
         "train_freq": 1,
-        "gradient_steps": 224,
+        "gradient_steps": 32,
         "use_sde": false,
         "sde_sample_freq": -1,
         "device": "cpu"
