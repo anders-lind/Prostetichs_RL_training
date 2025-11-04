@@ -18,7 +18,7 @@
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
-        "num_envs": 256,
+        "num_envs": 128,
         "seed": 1234,
         "safe_height": 0.7,
         "out_of_trajectory_threshold": 2.0,
@@ -108,7 +108,7 @@
         "tau": 0.005,
         "gamma": 0.99,
         "train_freq": 1,
-        "gradient_steps": 256,
+        "gradient_steps": 128,
         "use_sde": false,
         "sde_sample_freq": -1,
         "device": "cpu"
