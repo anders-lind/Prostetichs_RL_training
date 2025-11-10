@@ -6,4 +6,4 @@ Read README_MyoAssist.md for the installation guide for MyoAssist and a overview
 
 To train this model use:
 
-python rl_train/run_train.py --config_file_path rl_train/train/train_configs/my_imitation_OSL_ankle_22_separated_net_partial_obs.json
+python rl_train/run_train.py --config_file_path rl_train/train/train_configs/openexo_imitation_tutorial_22_separated_net_partial_obs.json
