@@ -1,0 +1,2 @@
+#!/bin/bash
+python rl_train/run_train.py --config_file_path A2C_train_1/openexo_imitation_tutorial_22_separated_net_partial_obs.json --config.env_params.prev_trained_policy_path A2C_train_1/A2C_env-192_steps-39174144/trained_models/model_39960576.zip
