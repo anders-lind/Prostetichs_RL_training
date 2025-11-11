@@ -100,21 +100,14 @@
         "prev_trained_policy_path": null
     },
     "ppo_params": {
-        "learning_rate": 0.0001,
-        "n_steps": 128,
-        "n_epochs": 30,
+        "learning_rate": 0.0007,
+        "n_steps": 4096,
         "gamma": 0.99,
-        "gae_lambda": 0.95,
-        "clip_range": 0.2,
-        "clip_range_vf": 100,
-        "ent_coef": 0.001,
+        "gae_lambda": 1.0,
+        "ent_coef": 0.0,
         "vf_coef": 0.5,
         "max_grad_norm": 0.5,
         "use_sde": false,
-        "sde_sample_freq": -1,
-        "target_kl": 0.01,
-        "AAAA": 1123132,
-        "DDDD": "test",
 
         "device": "cpu"
     },

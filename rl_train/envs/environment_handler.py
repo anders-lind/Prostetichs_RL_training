@@ -40,9 +40,13 @@ class EnvironmentHandler:
                 config.env_params.num_envs = 1
                 # config.ppo_params.n_steps = config.ppo_params.batch_size
             else:
-                env = SubprocVecEnv([lambda: (gym.make(config.env_params.env_id, 
-                                                    **gym_make_args)).unwrapped 
-                                for _ in range(config.env_params.num_envs)])
+                def make_env(i):
+                    def _init():
+                        print(f"Creating environment {i + 1}/{config.env_params.num_envs}")
+                        return gym.make(config.env_params.env_id, **gym_make_args).unwrapped
+                    return _init
+                
+                env = SubprocVecEnv([make_env(i) for i in range(config.env_params.num_envs)])
         except Exception as e:
             new_message = str(e)[:1000]
             e.args = (new_message,)
