@@ -18,7 +18,7 @@
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
-        "num_envs": 128,
+        "num_envs": 32,
         "seed": 1234,
         "safe_height": 0.7,
         "out_of_trajectory_threshold": 2.0,
@@ -101,14 +101,14 @@
         "prev_trained_policy_path": null
     },
     "sac_params": {
-        "learning_rate": 0.0001,
+        "learning_rate": 0.0003,
         "buffer_size": 1000000,
-        "learning_starts": 256000,
-        "batch_size": 1024,
+        "learning_starts": 50000,
+        "batch_size": 512,
         "tau": 0.005,
         "gamma": 0.99,
         "train_freq": 1,
-        "gradient_steps": 128,
+        "gradient_steps": 16,
         "use_sde": false,
         "sde_sample_freq": -1,
         "device": "cuda"
