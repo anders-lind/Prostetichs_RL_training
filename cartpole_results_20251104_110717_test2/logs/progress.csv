@@ -1,2 +1,0 @@
-time/iterations,rollout/ep_rew_mean,train/value_loss,train/explained_variance,train/entropy_loss,train/policy_loss,rollout/ep_len_mean,time/fps,time/total_timesteps,train/n_updates,time/time_elapsed,train/learning_rate
-100,84.47,1051.3170166015625,0.04612016677856445,-0.6189783811569214,14.853906631469727,84.47,65,12800,99,196,0.0007
