@@ -13,8 +13,8 @@
         }
     ],
     "logger_params": {
-        "logging_frequency": 1000000,
-        "evaluate_frequency": 1000000 
+        "logging_frequency": 2000,
+        "evaluate_frequency": 4000 
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
