@@ -66,7 +66,7 @@ def main():
     """Main function to run the simulation."""
     
     # --- Load from Optimization Results ---
-    LOAD_FROM_FILE = True
+    LOAD_FROM_FILE = False
     notebook_dir = os.getcwd()
     PARAMS_FILE_PATH = os.path.join(notebook_dir, "results", "optim_results","tutorial_example", "myorfl_Kine_2D_1_25_2025Aug11_1439_None_BestLast.txt")
     
