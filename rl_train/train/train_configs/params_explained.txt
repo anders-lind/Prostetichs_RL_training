@@ -1,0 +1,4 @@
+openexo_imitation_tutorial_22_separated_net_partial_obs_2:
+Stable Baseline defaults
+except n_steps increased from 5 to 4096
+
