@@ -166,66 +166,63 @@ class EnvironmentHandler:
             policy_kwargs = DictionableDataclass.to_dict(config.policy_params)
             print(f"Using HumanActorCriticPolicy")
             
+        USE_A2C = False
         if trained_model_path is not None:
-            # Resolve the requested path to an actual file that exists.
-            resolved_path = trained_model_path
-            # Try direct path first
-            if not os.path.exists(resolved_path):
-                # Try adding common .zip extension
-                if os.path.exists(resolved_path + ".zip"):
-                    resolved_path = resolved_path + ".zip"
-                else:
-                    # Fallback: look for files that start with the requested base name in the same directory
-                    parent = os.path.dirname(resolved_path) or os.getcwd()
-                    base = os.path.basename(resolved_path)
-                    pattern = os.path.join(parent, base + "*.zip")
-                    matches = glob.glob(pattern)
-                    if matches:
-                        # pick the file with the largest numeric suffix if possible, otherwise the last one
-                        def _key(f):
-                            # try to extract number after 'model_'
-                            name = os.path.basename(f)
-                            import re
-                            m = re.search(r"model_(\d+)", name)
-                            return int(m.group(1)) if m else 0
-                        resolved_path = max(matches, key=_key)
-
-            print(f"Loading trained model from: {resolved_path}  (requested: {trained_model_path})")
-            model = stable_baselines3.PPO.load(resolved_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
-                                            )
+            print(f"Loading trained model from {trained_model_path}")
+            if not USE_A2C:
+                model = stable_baselines3.PPO.load(trained_model_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                )
+                print(f"Loading trained model from {trained_model_path}")
+            else:
+                model = stable_baselines3.A2C.load(trained_model_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                )
         elif config.env_params.prev_trained_policy_path:
             print(f"Loading previous trained policy from {config.env_params.prev_trained_policy_path}")
             # when should I reset the (value)network?
-            model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
+            if not USE_A2C:
+                model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
 
-                                            # policy_kwargs=policy_kwargs,
-                                            verbose=2,
-                                            **DictionableDataclass.to_dict(config.ppo_params),
-                                            )
+                                                # policy_kwargs=policy_kwargs,
+                                                verbose=2,
+                                                **DictionableDataclass.to_dict(config.ppo_params),
+                                                )
+            else:
+                model = stable_baselines3.A2C.load(config.env_params.prev_trained_policy_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+
+                                                # policy_kwargs=policy_kwargs,
+                                                verbose=2,
+                                                **DictionableDataclass.to_dict(config.ppo_params),
+                                                )
             # Only try to reset network if it's a custom policy
             if hasattr(model.policy, 'reset_network'):
                 model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
                                         reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
                                         reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
         else:
-            # model = stable_baselines3.PPO(
-            #     policy=policy_class,
-            #     env=env,
-            #     policy_kwargs=policy_kwargs,
-            #     verbose=2,
-            #     **DictionableDataclass.to_dict(config.ppo_params),
-            # )
-            model = stable_baselines3.A2C(
-                policy=policy_class,
-                env=env,
-                policy_kwargs=policy_kwargs,
-                verbose=2,
-                **DictionableDataclass.to_dict(config.ppo_params),
-            )
+            if not USE_A2C:
+                model = stable_baselines3.PPO(
+                    policy=policy_class,
+                    env=env,
+                    policy_kwargs=policy_kwargs,
+                    verbose=2,
+                    **DictionableDataclass.to_dict(config.ppo_params),
+                )
+            else:
+                model = stable_baselines3.A2C(
+                    policy=policy_class,
+                    env=env,
+                    policy_kwargs=policy_kwargs,
+                    verbose=2,
+                    **DictionableDataclass.to_dict(config.ppo_params),
+                )
         return model
     @staticmethod
     def updateconfig_from_model_policy(config, model):
