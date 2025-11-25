@@ -1,5 +1,5 @@
 {
-    "total_timesteps": 3e7,
+    "total_timesteps": 2000,
     "evaluate_param_list":[
         {
             "num_timesteps": 200,
@@ -14,11 +14,11 @@
     ],
     "logger_params": {
         "logging_frequency": 500,
-        "evaluate_frequency": 4000 
+        "evaluate_frequency": 1000 
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
-        "num_envs": 224,
+        "num_envs": 1,
         "seed": 1234,
         "safe_height": 0.7,
         "out_of_trajectory_threshold": 2.0,
@@ -77,7 +77,7 @@
                 "ankle_angle_r": 0.1
             },
             "end_effector_imitation_reward": 0.0,
-            "forward_reward": 5.0,
+            "forward_reward": 1.0,
             "muscle_activation_penalty": 0.1,
             "muscle_activation_diff_penalty": 0.1,
 
@@ -102,8 +102,8 @@
     },
     "sac_params": {
         "learning_rate": 0.0003,
-        "buffer_size": 1000000,
-        "learning_starts": 256000,
+        "buffer_size": 500,
+        "learning_starts": 500,
         "batch_size": 64,
         "tau": 0.005,
         "gamma": 0.99,
