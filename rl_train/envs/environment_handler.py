@@ -165,43 +165,63 @@ class EnvironmentHandler:
             policy_kwargs = DictionableDataclass.to_dict(config.policy_params)
             print(f"Using HumanActorCriticPolicy")
             
+        USE_A2C = False
         if trained_model_path is not None:
             print(f"Loading trained model from {trained_model_path}")
-            model = stable_baselines3.PPO.load(trained_model_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
-                                            )
+            if not USE_A2C:
+                model = stable_baselines3.PPO.load(trained_model_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                )
+                print(f"Loading trained model from {trained_model_path}")
+            else:
+                model = stable_baselines3.A2C.load(trained_model_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+                                                )
         elif config.env_params.prev_trained_policy_path:
             print(f"Loading previous trained policy from {config.env_params.prev_trained_policy_path}")
             # when should I reset the (value)network?
-            model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
-                                            env=env,
-                                            custom_objects = {"policy_class": policy_class},
+            if not USE_A2C:
+                model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
 
-                                            # policy_kwargs=policy_kwargs,
-                                            verbose=2,
-                                            **DictionableDataclass.to_dict(config.ppo_params),
-                                            )
+                                                # policy_kwargs=policy_kwargs,
+                                                verbose=2,
+                                                **DictionableDataclass.to_dict(config.ppo_params),
+                                                )
+            else:
+                model = stable_baselines3.A2C.load(config.env_params.prev_trained_policy_path,
+                                                env=env,
+                                                custom_objects = {"policy_class": policy_class},
+
+                                                # policy_kwargs=policy_kwargs,
+                                                verbose=2,
+                                                **DictionableDataclass.to_dict(config.ppo_params),
+                                                )
             # Only try to reset network if it's a custom policy
             if hasattr(model.policy, 'reset_network'):
                 model.policy.reset_network(reset_shared_net=config.policy_params.custom_policy_params.reset_shared_net_after_load,
                                         reset_policy_net=config.policy_params.custom_policy_params.reset_policy_net_after_load,
                                         reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
         else:
-            # model = stable_baselines3.PPO(
-            #     policy=policy_class,
-            #     env=env,
-            #     policy_kwargs=policy_kwargs,
-            #     verbose=2,
-            #     **DictionableDataclass.to_dict(config.ppo_params),
-            # )
-            model = stable_baselines3.A2C(
-                policy=policy_class,
-                env=env,
-                policy_kwargs=policy_kwargs,
-                verbose=2,
-                **DictionableDataclass.to_dict(config.ppo_params),
-            )
+            if not USE_A2C:
+                model = stable_baselines3.PPO(
+                    policy=policy_class,
+                    env=env,
+                    policy_kwargs=policy_kwargs,
+                    verbose=2,
+                    **DictionableDataclass.to_dict(config.ppo_params),
+                )
+            else:
+                model = stable_baselines3.A2C(
+                    policy=policy_class,
+                    env=env,
+                    policy_kwargs=policy_kwargs,
+                    verbose=2,
+                    **DictionableDataclass.to_dict(config.ppo_params),
+                )
         return model
     @staticmethod
     def updateconfig_from_model_policy(config, model):
