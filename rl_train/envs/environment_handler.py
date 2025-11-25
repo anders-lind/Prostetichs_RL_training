@@ -5,6 +5,7 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from myosuite.utils import gym
 from rl_train.utils.data_types import DictionableDataclass
 import os
+import glob
 from rl_train.train.train_configs.config import TrainSessionConfigBase
 class EnvironmentHandler:
     @staticmethod
@@ -166,8 +167,31 @@ class EnvironmentHandler:
             print(f"Using HumanActorCriticPolicy")
             
         if trained_model_path is not None:
-            print(f"Loading trained model from {trained_model_path}")
-            model = stable_baselines3.PPO.load(trained_model_path,
+            # Resolve the requested path to an actual file that exists.
+            resolved_path = trained_model_path
+            # Try direct path first
+            if not os.path.exists(resolved_path):
+                # Try adding common .zip extension
+                if os.path.exists(resolved_path + ".zip"):
+                    resolved_path = resolved_path + ".zip"
+                else:
+                    # Fallback: look for files that start with the requested base name in the same directory
+                    parent = os.path.dirname(resolved_path) or os.getcwd()
+                    base = os.path.basename(resolved_path)
+                    pattern = os.path.join(parent, base + "*.zip")
+                    matches = glob.glob(pattern)
+                    if matches:
+                        # pick the file with the largest numeric suffix if possible, otherwise the last one
+                        def _key(f):
+                            # try to extract number after 'model_'
+                            name = os.path.basename(f)
+                            import re
+                            m = re.search(r"model_(\d+)", name)
+                            return int(m.group(1)) if m else 0
+                        resolved_path = max(matches, key=_key)
+
+            print(f"Loading trained model from: {resolved_path}  (requested: {trained_model_path})")
+            model = stable_baselines3.PPO.load(resolved_path,
                                             env=env,
                                             custom_objects = {"policy_class": policy_class},
                                             )

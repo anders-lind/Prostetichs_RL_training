@@ -14,11 +14,12 @@
         }
     ],
     "logger_params": {
-        "logging_frequency": 1
+        "logging_frequency": 1,
+        "evaluate_frequency": 2
     },
     "env_params": {
         "env_id": "myoAssistLegImitationExo-v0",
-        "num_envs": 10,
+        "num_envs": 1,
         "seed": 1234,
         "safe_height": 0.7,
         "out_of_trajectory_threshold": 0.6,

@@ -93,6 +93,13 @@ class GaitAnalyzer:
                 is_primary_falling_edge = prev_primary_combined >= foot_threshold and curr_primary_combined < foot_threshold
                 is_secondary_rising_edge = prev_secondary_combined < foot_threshold and curr_secondary_combined >= foot_threshold
                 is_secondary_falling_edge = prev_secondary_combined >= foot_threshold and curr_secondary_combined < foot_threshold
+                
+                # Print all variables for debuggin
+                # print("prev_primary_combined:", prev_primary_combined, "curr_primary_combined :", curr_primary_combined)
+                # print("prev_secondary_combined:", prev_secondary_combined, "curr_secondary_combined :", curr_secondary_combined)
+                # print("prev_primary_foot:", prev_primary_foot, "curr_primary_foot:", curr_primary_foot)
+                # print("prev_primary_toes:", prev_primary_toes, "curr_primary_toes:", curr_primary_toes)
+                
                 if is_primary_rising_edge and is_primary_foot_down and primary_stance_start_idx is None:
                     primary_stance_ing = True
                     primary_stance_start_idx = idx

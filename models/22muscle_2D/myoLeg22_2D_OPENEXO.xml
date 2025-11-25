@@ -194,6 +194,7 @@
                         <body name="calcn_r" pos="-0.04877 -0.04195 0.00792">
                             <inertial diaginertia="0.00041 0.00039 0.00014" mass="1.25" pos="0.1 0.03 0" quat="0 0.707107 0 0.707107"/>
                             <geom mesh="calcn_r_geom_1_foot" name="calcn_r_geom_1" rgba="1 1 1 1" type="mesh"/>
+                            <geom name="r_foot_touch_geom" type="box" pos="0.01 -0.002 -0.01" size=".09 .02 .05" rgba="0 0 0 0" group="3"/>
                             <site name="gastroc_r_med_gas_r-P3" pos="0 0.031 -0.0053"/>
                             <site name="soleus_r_soleus_r-P2" pos="0 0.031 -0.0053"/>
                             <site name="tib_ant_r_tib_ant_r-P3" pos="0.1166 0.0178 -0.0305"/>
@@ -203,7 +204,7 @@
                             <site name="fdl_r-P4" pos="0.0708 0.0176 -0.0263"/>
                             <site name="fdl_r-P5" pos="0.1658 -0.0081 0.0116"/>
 
-                            <site name="r_foot_touch" type="box" pos="0.01 -0.002 -0.01" size=".03 .02 .03" euler="0 0 0" class="myo_leg_touch"/>
+                            <site name="r_foot_touch" type="box" pos="0.01 -0.002 -0.01" size=".09 .02 .05" euler="0 0 0" class="myo_leg_touch"/>
 
                             <body name="exo_blade_r" pos="0.1 0.055 -0.0575" euler="0 -0.15 0">
                                 <inertial diaginertia="0.00002 0.00011 0.00009" mass="0.04872" pos="0 -0.06 0.05" quat="1 0 0 0"/>
@@ -312,6 +313,7 @@
                         <body name="calcn_l" pos="-0.04877 -0.04195 -0.00792">
                             <inertial diaginertia="0.00041 0.00039 0.00014" mass="1.25" pos="0.1 0.03 0" quat="0 0.707107 0 0.707107"/>
                             <geom mesh="calcn_l_geom_1_l_foot" name="calcn_l_geom_1" rgba="1 1 1 1" type="mesh"/>
+                            <geom name="l_foot_touch_geom" type="box" pos="0.01 -0.002 0.01" size=".09 .02 .05" rgba="0 0 0 0" group="3"/>
                             <site name="gastroc_l_med_gas_l-P3" pos="0 0.031 0.0053"/>
                             <site name="soleus_l_soleus_l-P2" pos="0 0.031 0.0053"/>
                             <site name="tib_ant_l_tib_ant_l-P3" pos="0.1166 0.0178 0.0305"/>
@@ -327,7 +329,7 @@
                                 rgba="0.3 0.3 0.3 1"/>
                             </body>
                             
-                            <site name="l_foot_touch" type="box" pos="0.01 -0.002 0.01" size=".03 .02 .03" euler="0 0 0" class="myo_leg_touch"/>
+                            <site name="l_foot_touch" type="box" pos="0.01 -0.002 0.01" size=".09 .02 .05" euler="0 0 0" class="myo_leg_touch"/>
                             <site name="l_heel_btm" type="sphere" pos="0.01 -0.008 0.01" size="0.01" group="3" rgba="0 1 0 0.4"/>
                             <site name="l_toe_btm" type="sphere" pos="0.17 -0.003 0.01" size="0.01" group="3" rgba="0 1 0 0.4"/>
 
