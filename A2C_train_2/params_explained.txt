@@ -1,2 +1,0 @@
-Stable Baseline defaults
-except n_steps increased from 128 to 4096
