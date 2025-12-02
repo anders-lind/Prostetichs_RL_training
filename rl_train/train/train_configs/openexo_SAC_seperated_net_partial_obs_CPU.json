@@ -89,7 +89,7 @@
 
             "foot_force_penalty": 0.5
         },
-        "custom_max_episode_steps": 1000,
+        "custom_max_episode_steps": 1800,
         "model_path": "models/22muscle_2D/myoLeg22_2D_OPENEXO.xml",
         "reference_data_path": "rl_train/reference_data/short_reference_gait.npz",
         "reference_data_keys": ["ankle_angle_l", "ankle_angle_r",

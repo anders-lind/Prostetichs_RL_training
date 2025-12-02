@@ -83,9 +83,9 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
     gait_data.read_json_data(gait_data_path)
 
     # =========================================================
-    # 4. CUSTOM PLOTTING: Trajectory Analysis (X and Z)
+    # 4. CUSTOM PLOTTING & CSV EXPORT: Trajectory Analysis
     # =========================================================
-    print(f"Generating Raw Trajectory Plots in {analyze_result_dir}...")
+    print(f"Generating Raw Trajectory Plots & CSV in {analyze_result_dir}...")
 
     def extract_numeric_data(source_dict, key):
         """Helper to safely extract float array from potentially nested dicts."""
@@ -94,22 +94,17 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
         
         raw = source_dict[key]
         
-        # --- FIXED LOGIC: Handle {'qpos': ..., 'qvel': ...} structure ---
         if isinstance(raw, dict):
-            # Prefer 'qpos' (Position)
             if 'qpos' in raw:
                 raw = raw['qpos']
-            # Fallback to 'data' if it exists
             elif 'data' in raw:
                 raw = raw['data']
             else:
-                print(f"  DEBUG: Key '{key}' is a dict but has no 'qpos' or 'data'. Keys: {list(raw.keys())}")
                 return None
         
         try:
             return np.array(raw, dtype=np.float64)
-        except Exception as e:
-            print(f"  DEBUG: Could not convert '{key}' to float array. Error: {e}")
+        except Exception:
             return None
 
     try:
@@ -131,12 +126,10 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
         for loc in search_locations:
             if not loc: continue
             
-            # Try to extract Z first
             temp_z = extract_numeric_data(loc, z_key)
             
             if temp_z is not None:
                 z_values = np.atleast_1d(temp_z)
-                # Try to extract X from the same location
                 temp_x = extract_numeric_data(loc, x_key)
                 if temp_x is not None:
                     x_values = np.atleast_1d(temp_x)
@@ -146,14 +139,11 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
         
         if z_values is None:
             print(f"  -> ERROR: Could not find numeric data for '{z_key}'.")
-            if 'joint_data' in series:
-                # Debug print to see structure if we fail
-                raw_val = series['joint_data'].get(z_key, 'MISSING')
-                print(f"  -> Structure of joint_data['{z_key}']: {type(raw_val)}")
         else:
             num_steps = len(z_values)
             time = np.linspace(0, num_steps / framerate, num_steps)
 
+            # --- 1. GENERATE PLOT ---
             plt.figure(figsize=(10, 8))
             
             # Subplot 1: Forward (X)
@@ -167,11 +157,8 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
             # Subplot 2: Height (Z/Y)
             plt.subplot(2, 1, 2)
             plt.plot(time, z_values, label=f'Height ({z_key})', color='green', linewidth=1.5)
-            
-            # Add Safe Height Line
             safe_height = getattr(config.env_params, 'safe_height', 0.7)
             plt.axhline(y=safe_height, color='r', linestyle='--', alpha=0.7, label=f'Safe Height ({safe_height}m)')
-            
             plt.title('Global Vertical Position z(t)')
             plt.xlabel('Time [s]')
             plt.ylabel('Height [m]')
@@ -184,8 +171,21 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
             plt.close()
             print(f"  -> Trajectory plot saved to {save_path}")
 
+            # --- 2. SAVE CSV (t, x, y) ---
+            csv_path = os.path.join(analyze_result_dir, "trajectory.csv")
+            
+            # Stack the data columns: Time, X (Forward), Z (Height/Y)
+            data_stack = np.column_stack((time, x_values, z_values))
+            
+            # Save using numpy
+            # header="t,x,y" creates the column names
+            # comments="" removes the default "# " hash from the header
+            np.savetxt(csv_path, data_stack, delimiter=",", header="t,x,y", comments="", fmt="%.6f")
+            
+            print(f"  -> Trajectory CSV saved to {csv_path}")
+
     except Exception as e:
-        print(f"  -> Error plotting trajectory: {e}")
+        print(f"  -> Error processing trajectory: {e}")
         import traceback
         traceback.print_exc()
     # =========================================================
