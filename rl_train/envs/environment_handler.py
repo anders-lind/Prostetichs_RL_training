@@ -166,16 +166,17 @@ class EnvironmentHandler:
             policy_kwargs = DictionableDataclass.to_dict(config.policy_params)
             print(f"Using HumanActorCriticPolicy")
             
-        USE_A2C = False
+        USE_A2C = True
         if trained_model_path is not None:
             print(f"Loading trained model from {trained_model_path}")
             if not USE_A2C:
+                print(f"    As PPO")
                 model = stable_baselines3.PPO.load(trained_model_path,
                                                 env=env,
                                                 custom_objects = {"policy_class": policy_class},
                                                 )
-                print(f"Loading trained model from {trained_model_path}")
             else:
+                print(f"    As A2C")
                 model = stable_baselines3.A2C.load(trained_model_path,
                                                 env=env,
                                                 custom_objects = {"policy_class": policy_class},
@@ -184,6 +185,7 @@ class EnvironmentHandler:
             print(f"Loading previous trained policy from {config.env_params.prev_trained_policy_path}")
             # when should I reset the (value)network?
             if not USE_A2C:
+                print(f"    As PPO")
                 model = stable_baselines3.PPO.load(config.env_params.prev_trained_policy_path,
                                                 env=env,
                                                 custom_objects = {"policy_class": policy_class},
@@ -193,6 +195,7 @@ class EnvironmentHandler:
                                                 **DictionableDataclass.to_dict(config.ppo_params),
                                                 )
             else:
+                print(f"    As A2C")
                 model = stable_baselines3.A2C.load(config.env_params.prev_trained_policy_path,
                                                 env=env,
                                                 custom_objects = {"policy_class": policy_class},
@@ -208,6 +211,7 @@ class EnvironmentHandler:
                                         reset_value_net=config.policy_params.custom_policy_params.reset_value_net_after_load)
         else:
             if not USE_A2C:
+                print(f"Creating new PPO model")
                 model = stable_baselines3.PPO(
                     policy=policy_class,
                     env=env,
@@ -216,6 +220,7 @@ class EnvironmentHandler:
                     **DictionableDataclass.to_dict(config.ppo_params),
                 )
             else:
+                print(f"Creating new A2C model")
                 model = stable_baselines3.A2C(
                     policy=policy_class,
                     env=env,
