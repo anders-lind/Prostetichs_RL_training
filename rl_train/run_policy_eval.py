@@ -1,6 +1,13 @@
-
-# Parse command line arguments for log_dir
 import sys
+import os
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ---------------------------------------------------------
+# 1. Setup and Config Loading
+# ---------------------------------------------------------
+
 if len(sys.argv) > 1:
     log_dir = sys.argv[1]
 else:
@@ -8,116 +15,212 @@ else:
 
 if log_dir == "":
     log_dir = input("Enter the log directory: ")
-    # log_dir = "docs/assets/tutorial_rl_models/train_session_20250728-161129_tutorial_partial_obs" # partial obs
-    # log_dir = "docs/assets/tutorial_rl_models/train_session_20250729-005528_tutorial_full_obs" # Full obs
+
 show_plot = False
-import os
 
-import numpy as np
 from rl_train.utils.data_types import DictionableDataclass
-from rl_train.utils.data_types import DictionableDataclass
-
-import os
 from rl_train.utils.train_log_handler import TrainLogHandler
 from rl_train.utils.train_checkpoint_data_imitation import ImitationTrainCheckpointData
-import json
 from rl_train.train.train_configs.config_imitation import ImitationTrainSessionConfig
-from rl_train.utils.data_types import DictionableDataclass
+from rl_train.envs.myoassist_leg_base import MyoAssistLegBase
+from rl_train.analyzer.gait_analyze import GaitAnalyzer
+from rl_train.analyzer.gait_evaluate import GaitData, ImitationGaitEvaluator
+
+# Load Configuration
 with open(os.path.join(log_dir, "session_config.json"), 'r') as f:
     config_dict = json.load(f)
 config = DictionableDataclass.create(ImitationTrainSessionConfig, config_dict)
 
+# ---------------------------------------------------------
+# 2. Main Evaluation Loop
+# ---------------------------------------------------------
 for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
-    analyze_result_dir = os.path.join(log_dir,f"analyze_results_{idx:02d}")
+    analyze_result_dir = os.path.join(log_dir, f"analyze_results_{idx:02d}")
     if not os.path.exists(analyze_result_dir):
         os.makedirs(analyze_result_dir)
 
+    # Load Log Data
     log_handler = TrainLogHandler(log_dir)
     log_handler.load_log_data(ImitationTrainCheckpointData)
 
-    from rl_train.utils.data_types import DictionableDataclass
     DictionableDataclass.to_dict(log_handler.log_datas[-1])
 
-    import sys
     sys.modules.pop('package.train_log_analyzer', None)
     from rl_train.analyzer.train_log_analyzer import TrainLogAnalyzer
     train_log_analyzer = TrainLogAnalyzer(log_handler)
     train_log_analyzer.plot_reward(result_dir=analyze_result_dir, show_plot=show_plot)
 
-
-    
-
-
-    from rl_train.envs.myoassist_leg_base import MyoAssistLegBase
-
-        
-
-    import sys
-    from rl_train.analyzer.gait_analyze import GaitAnalyzer
-    from rl_train.analyzer.gait_evaluate import GaitData
-
-
+    # ---------------------------------------------------------
+    # 3. Run Evaluation (Physics Simulation)
+    # ---------------------------------------------------------
     gait_data_name = f"gait_evaluated_data.json"
-    if os.path.exists(os.path.join(analyze_result_dir, gait_data_name)):
+    gait_data_path = os.path.join(analyze_result_dir, gait_data_name)
+    
+    if os.path.exists(gait_data_path):
         user_input = input(f"Regenerate evaluate data? ({gait_data_name}) (y/n(anything))")
     else:
         user_input = "y"
     is_regen_evaluating_data = True if user_input == "y" else False
 
-    from rl_train.analyzer.gait_evaluate import ImitationGaitEvaluator
-    gait_evaluator: ImitationGaitEvaluator = ImitationGaitEvaluator(log_handler, config)
+    gait_evaluator = ImitationGaitEvaluator(log_handler, config)
     gait_evaluator.load_reference_data()
     gait_evaluator.initialize_env()
-    if is_regen_evaluating_data:
-        gait_data_path = gait_evaluator.evaluate(result_dir=analyze_result_dir,
-                                                file_name=gait_data_name,
-                                                velocity_mode=MyoAssistLegBase.VelocityMode[evaluate_param["velocity_mode"]],
-                                                target_velocity_period=evaluate_param["target_velocity_period"],
-                                                max_timestep=evaluate_param["num_timesteps"],
-                                                min_target_velocity=evaluate_param["min_target_velocity"],
-                                                max_target_velocity=evaluate_param["max_target_velocity"],
-                                                terminate_when_done=True
-                                                )
-    else:
-        gait_data_path = os.path.join(analyze_result_dir, gait_data_name)
 
+    if is_regen_evaluating_data:
+        gait_data_path = gait_evaluator.evaluate(
+            result_dir=analyze_result_dir,
+            file_name=gait_data_name,
+            velocity_mode=MyoAssistLegBase.VelocityMode[evaluate_param["velocity_mode"]],
+            target_velocity_period=evaluate_param["target_velocity_period"],
+            max_timestep=evaluate_param["num_timesteps"],
+            min_target_velocity=evaluate_param["min_target_velocity"],
+            max_target_velocity=evaluate_param["max_target_velocity"],
+            terminate_when_done=True
+        )
+
+    # Load the generated data
     gait_data = GaitData()
     gait_data.read_json_data(gait_data_path)
+
+    # =========================================================
+    # 4. CUSTOM PLOTTING: Trajectory Analysis (X and Z)
+    # =========================================================
+    print(f"Generating Raw Trajectory Plots in {analyze_result_dir}...")
+
+    def extract_numeric_data(source_dict, key):
+        """Helper to safely extract float array from potentially nested dicts."""
+        if key not in source_dict:
+            return None
+        
+        raw = source_dict[key]
+        
+        # --- FIXED LOGIC: Handle {'qpos': ..., 'qvel': ...} structure ---
+        if isinstance(raw, dict):
+            # Prefer 'qpos' (Position)
+            if 'qpos' in raw:
+                raw = raw['qpos']
+            # Fallback to 'data' if it exists
+            elif 'data' in raw:
+                raw = raw['data']
+            else:
+                print(f"  DEBUG: Key '{key}' is a dict but has no 'qpos' or 'data'. Keys: {list(raw.keys())}")
+                return None
+        
+        try:
+            return np.array(raw, dtype=np.float64)
+        except Exception as e:
+            print(f"  DEBUG: Could not convert '{key}' to float array. Error: {e}")
+            return None
+
+    try:
+        series = getattr(gait_data, 'series_data', {})
+        
+        # Look in likely locations
+        search_locations = [
+            series.get('joint_data', {}), 
+            series.get('physics_data', {})
+        ]
+
+        framerate = config.env_params.control_framerate
+        x_key = 'pelvis_tx'
+        z_key = 'pelvis_ty'
+        
+        z_values = None
+        x_values = None
+
+        for loc in search_locations:
+            if not loc: continue
+            
+            # Try to extract Z first
+            temp_z = extract_numeric_data(loc, z_key)
+            
+            if temp_z is not None:
+                z_values = np.atleast_1d(temp_z)
+                # Try to extract X from the same location
+                temp_x = extract_numeric_data(loc, x_key)
+                if temp_x is not None:
+                    x_values = np.atleast_1d(temp_x)
+                else:
+                    x_values = np.zeros_like(z_values)
+                break
+        
+        if z_values is None:
+            print(f"  -> ERROR: Could not find numeric data for '{z_key}'.")
+            if 'joint_data' in series:
+                # Debug print to see structure if we fail
+                raw_val = series['joint_data'].get(z_key, 'MISSING')
+                print(f"  -> Structure of joint_data['{z_key}']: {type(raw_val)}")
+        else:
+            num_steps = len(z_values)
+            time = np.linspace(0, num_steps / framerate, num_steps)
+
+            plt.figure(figsize=(10, 8))
+            
+            # Subplot 1: Forward (X)
+            plt.subplot(2, 1, 1)
+            plt.plot(time, x_values, label=f'Forward ({x_key})', color='blue', linewidth=1.5)
+            plt.title('Global Forward Position x(t)')
+            plt.ylabel('Position [m]')
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+
+            # Subplot 2: Height (Z/Y)
+            plt.subplot(2, 1, 2)
+            plt.plot(time, z_values, label=f'Height ({z_key})', color='green', linewidth=1.5)
+            
+            # Add Safe Height Line
+            safe_height = getattr(config.env_params, 'safe_height', 0.7)
+            plt.axhline(y=safe_height, color='r', linestyle='--', alpha=0.7, label=f'Safe Height ({safe_height}m)')
+            
+            plt.title('Global Vertical Position z(t)')
+            plt.xlabel('Time [s]')
+            plt.ylabel('Height [m]')
+            plt.grid(True, alpha=0.3)
+            plt.legend()
+
+            plt.tight_layout()
+            save_path = os.path.join(analyze_result_dir, "trajectory_analysis_xz.png")
+            plt.savefig(save_path)
+            plt.close()
+            print(f"  -> Trajectory plot saved to {save_path}")
+
+    except Exception as e:
+        print(f"  -> Error plotting trajectory: {e}")
+        import traceback
+        traceback.print_exc()
+    # =========================================================
+
+    # ---------------------------------------------------------
+    # 5. Video Replay Generation
+    # ---------------------------------------------------------
+    gait_evaluator.replay(
+        gait_data_path, 
+        os.path.join(analyze_result_dir, "replay.mp4"),
+        cam_distance=evaluate_param["cam_distance"],
+        use_activation_visualization=evaluate_param["visualize_activation"],
+        cam_type=evaluate_param["cam_type"],
+        realtime_plotting_info=evaluate_param.get("realtime_plotting_info", []),
+        video_fps=config.env_params.control_framerate
+    )
+
+    # ---------------------------------------------------------
+    # 6. Detailed Gait Analysis
+    # ---------------------------------------------------------
     segmented_ref_data = np.load("rl_train/reference_data/segmented.npz", allow_pickle=True)
     segmented_ref_data = {key: segmented_ref_data[key] for key in segmented_ref_data.files}
 
-
-    gait_evaluator.replay(gait_data_path, os.path.join(analyze_result_dir, "replay.mp4"),
-                                                cam_distance=evaluate_param["cam_distance"],
-                                                # max_time_step=evaluate_param["num_timesteps"],
-                                                use_activation_visualization=evaluate_param["visualize_activation"],
-                                                cam_type=evaluate_param["cam_type"],
-                                                realtime_plotting_info=evaluate_param.get("realtime_plotting_info", []),
-                                                video_fps=config.env_params.control_framerate
-                                                )
-
     gait_analyzer = GaitAnalyzer(gait_data, segmented_ref_data, show_plot)
-
 
     if len(gait_analyzer.get_gait_segment_index(is_right_foot_based=True)) < 1:
         print("="*10 + "Warning" + "="*10)
-        print("Warning! Not enough gait data to plot. Skipping plotting.")
+        print("Warning! Not enough gait data to plot standard metrics. Skipping detailed plotting.")
         print("="*10 + "Warning" + "="*10)
-
         continue
 
-
-    gait_analyzer.plot_entire_result(result_dir=analyze_result_dir,is_right_foot_based=True)
-
+    gait_analyzer.plot_entire_result(result_dir=analyze_result_dir, is_right_foot_based=True)
     gait_analyzer.plot_exo_segmented_data(result_dir=analyze_result_dir)
-
     gait_analyzer.plot_segmented_kinematics_result(result_dir=analyze_result_dir)
-
     gait_analyzer.plot_left_right_comparison(result_dir=analyze_result_dir)
-
     gait_analyzer.plot_right_ref_comparison(result_dir=analyze_result_dir)
-
     gait_analyzer.plot_segmented_muscle_data(result_dir=analyze_result_dir, is_plot_right=True)
-
-
     gait_analyzer.joint_angle_by_velocity(result_dir=analyze_result_dir)
