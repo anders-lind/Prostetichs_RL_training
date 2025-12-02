@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -83,111 +84,136 @@ for (idx, evaluate_param) in enumerate(config.evaluate_param_list):
     gait_data.read_json_data(gait_data_path)
 
     # =========================================================
-    # 4. CUSTOM PLOTTING & CSV EXPORT: Trajectory Analysis
+    # 4. DATA EXTRACTION & PLOTTING
     # =========================================================
-    print(f"Generating Raw Trajectory Plots & CSV in {analyze_result_dir}...")
+    print(f"\nProcessing Data in {analyze_result_dir}...")
 
+    # Shared Helper Function
     def extract_numeric_data(source_dict, key):
         """Helper to safely extract float array from potentially nested dicts."""
-        if key not in source_dict:
-            return None
-        
+        if key not in source_dict: return None
         raw = source_dict[key]
-        
         if isinstance(raw, dict):
-            if 'qpos' in raw:
-                raw = raw['qpos']
-            elif 'data' in raw:
-                raw = raw['data']
-            else:
-                return None
-        
+            if 'qpos' in raw: raw = raw['qpos']
+            elif 'data' in raw: raw = raw['data']
+            else: return None
         try:
-            return np.array(raw, dtype=np.float64)
-        except Exception:
-            return None
+            val = np.array(raw, dtype=np.float64)
+            return np.atleast_1d(val)
+        except: return None
 
+    # --- PART A: SIMPLE PLOT & CSV (Targeted X/Z) ---
     try:
+        print("  -> Generating Simple Trajectory Plot & CSV...")
         series = getattr(gait_data, 'series_data', {})
-        
-        # Look in likely locations
-        search_locations = [
-            series.get('joint_data', {}), 
-            series.get('physics_data', {})
-        ]
-
         framerate = config.env_params.control_framerate
+        
+        # Locate specific keys
+        search_locations = [series.get('joint_data', {}), series.get('physics_data', {})]
         x_key = 'pelvis_tx'
         z_key = 'pelvis_ty'
-        
-        z_values = None
-        x_values = None
+        z_values = None; x_values = None
 
         for loc in search_locations:
             if not loc: continue
-            
             temp_z = extract_numeric_data(loc, z_key)
-            
             if temp_z is not None:
-                z_values = np.atleast_1d(temp_z)
+                z_values = temp_z
                 temp_x = extract_numeric_data(loc, x_key)
-                if temp_x is not None:
-                    x_values = np.atleast_1d(temp_x)
-                else:
-                    x_values = np.zeros_like(z_values)
+                x_values = temp_x if temp_x is not None else np.zeros_like(z_values)
                 break
         
-        if z_values is None:
-            print(f"  -> ERROR: Could not find numeric data for '{z_key}'.")
-        else:
+        if z_values is not None:
             num_steps = len(z_values)
             time = np.linspace(0, num_steps / framerate, num_steps)
 
-            # --- 1. GENERATE PLOT ---
+            # 1. Simple Plot
             plt.figure(figsize=(10, 8))
-            
-            # Subplot 1: Forward (X)
             plt.subplot(2, 1, 1)
-            plt.plot(time, x_values, label=f'Forward ({x_key})', color='blue', linewidth=1.5)
+            plt.plot(time, x_values, label=f'Forward ({x_key})', color='blue')
             plt.title('Global Forward Position x(t)')
             plt.ylabel('Position [m]')
-            plt.grid(True, alpha=0.3)
-            plt.legend()
-
-            # Subplot 2: Height (Z/Y)
+            plt.grid(True); plt.legend()
+            
             plt.subplot(2, 1, 2)
-            plt.plot(time, z_values, label=f'Height ({z_key})', color='green', linewidth=1.5)
+            plt.plot(time, z_values, label=f'Height ({z_key})', color='green')
             safe_height = getattr(config.env_params, 'safe_height', 0.7)
-            plt.axhline(y=safe_height, color='r', linestyle='--', alpha=0.7, label=f'Safe Height ({safe_height}m)')
+            plt.axhline(y=safe_height, color='r', linestyle='--', label=f'Safe Height ({safe_height}m)')
             plt.title('Global Vertical Position z(t)')
-            plt.xlabel('Time [s]')
-            plt.ylabel('Height [m]')
-            plt.grid(True, alpha=0.3)
-            plt.legend()
-
+            plt.xlabel('Time [s]'); plt.ylabel('Height [m]')
+            plt.grid(True); plt.legend()
+            
             plt.tight_layout()
-            save_path = os.path.join(analyze_result_dir, "trajectory_analysis_xz.png")
-            plt.savefig(save_path)
+            plt.savefig(os.path.join(analyze_result_dir, "trajectory_analysis_xz.png"))
             plt.close()
-            print(f"  -> Trajectory plot saved to {save_path}")
 
-            # --- 2. SAVE CSV (t, x, y) ---
-            csv_path = os.path.join(analyze_result_dir, "trajectory.csv")
-            
-            # Stack the data columns: Time, X (Forward), Z (Height/Y)
+            # 2. Simple CSV (t, x, y)
+            simple_csv_path = os.path.join(analyze_result_dir, "trajectory.csv")
             data_stack = np.column_stack((time, x_values, z_values))
-            
-            # Save using numpy
-            # header="t,x,y" creates the column names
-            # comments="" removes the default "# " hash from the header
-            np.savetxt(csv_path, data_stack, delimiter=",", header="t,x,y", comments="", fmt="%.6f")
-            
-            print(f"  -> Trajectory CSV saved to {csv_path}")
+            np.savetxt(simple_csv_path, data_stack, delimiter=",", header="t,x,y", comments="", fmt="%.6f")
+            print(f"     [OK] Saved trajectory.csv and plot.")
+        else:
+            print(f"     [ERR] Could not find {z_key} for simple plot.")
 
     except Exception as e:
-        print(f"  -> Error processing trajectory: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"     [ERR] Error in Simple Plotting: {e}")
+
+
+    # --- PART B: DEEP SCRAPE (All Signals) ---
+    try:
+        print("  -> Running Deep Scrape (All Signals)...")
+        master_data = {}
+        data_length = 0
+        categories = ['joint_data', 'sensor_data', 'actuator_data', 'physics_data']
+
+        for cat in categories:
+            container = series.get(cat, {})
+            if not container: continue
+            for key in container.keys():
+                val = extract_numeric_data(container, key)
+                if val is not None:
+                     # Skip complex multi-dim data for CSV simplicity
+                    if val.ndim > 1 or (len(val.shape) == 1 and val.shape[0] > 1000 and isinstance(val[0], (list, np.ndarray))):
+                        pass 
+                    
+                    col_name = f"{cat}_{key}"
+                    master_data[col_name] = val
+                    if len(val) > data_length: data_length = len(val)
+
+        if data_length > 0:
+            time = np.linspace(0, data_length / framerate, data_length)
+            master_data['time'] = time
+            valid_keys = [k for k, v in master_data.items() if len(v) == data_length]
+            
+            # 1. Master CSV
+            master_csv_path = os.path.join(analyze_result_dir, "all_positions_and_angles.csv")
+            with open(master_csv_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(valid_keys)
+                for i in range(data_length):
+                    writer.writerow([master_data[k][i] for k in valid_keys])
+            
+            # 2. Individual Plots
+            plots_dir = os.path.join(analyze_result_dir, "plots_all_signals")
+            if not os.path.exists(plots_dir): os.makedirs(plots_dir)
+            
+            for key in valid_keys:
+                if key == 'time': continue
+                plt.figure(figsize=(10, 4))
+                plt.plot(time, master_data[key], linewidth=1.5)
+                plt.title(f"{key}")
+                plt.grid(True, alpha=0.3)
+                plt.tight_layout()
+                safe_key = "".join([c if c.isalnum() else "_" for c in key])
+                plt.savefig(os.path.join(plots_dir, f"{safe_key}.png"))
+                plt.close()
+            print(f"     [OK] Saved all_positions_and_angles.csv and {len(valid_keys)} plots.")
+        else:
+            print("     [WARN] No data found for deep scrape.")
+
+    except Exception as e:
+        print(f"     [ERR] Error in Deep Scrape: {e}")
+
     # =========================================================
 
     # ---------------------------------------------------------
